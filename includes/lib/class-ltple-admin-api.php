@@ -347,7 +347,7 @@ class LTPLE_Directory_Admin_API {
 					$image_thumb = wp_get_attachment_thumb_url( $data );
 				}
 				$html .= '<img id="' . $option_name . '_preview" class="image_preview" src="' . $image_thumb . '" /><br/>' . "\n";
-				$html .= '<input id="' . $option_name . '_button" type="button" data-uploader_title="' . __( 'Upload an image' , 'live-template-editor-addon' ) . '" data-uploader_button_text="' . __( 'Use image' , 'live-template-editor-addon' ) . '" class="image_upload_button button" value="'. __( 'Upload new image' , 'live-template-editor-directory' ) . '" />' . "\n";
+				$html .= '<input id="' . $option_name . '_button" type="button" data-uploader_title="' . __( 'Upload an image' , 'live-template-editor-directory' ) . '" data-uploader_button_text="' . __( 'Use image' , 'live-template-editor-directory' ) . '" class="image_upload_button button" value="'. __( 'Upload new image' , 'live-template-editor-directory' ) . '" />' . "\n";
 				$html .= '<input id="' . $option_name . '_delete" type="button" class="image_delete_button button" value="'. __( 'Remove image' , 'live-template-editor-directory' ) . '" />' . "\n";
 				$html .= '<input id="' . $option_name . '" class="image_data_field" type="hidden" name="' . $option_name . '" value="' . $data . '"/><br/>' . "\n";
 			break;
