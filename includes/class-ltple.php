@@ -51,20 +51,60 @@ class LTPLE_Directory {
 		$this->settings = new LTPLE_Directory_Settings( $this->parent );
 		
 		$this->admin = new LTPLE_Directory_Admin_API( $this );
-
-		if ( !is_admin() ) {
-
-			// Load API for generic admin functions
-			
-			add_action( 'wp_head', array( $this, 'directory_header') );
-			add_action( 'wp_footer', array( $this, 'directory_footer') );
-		}
 		
 		// Handle localisation
 		
 		$this->load_plugin_textdomain();
 		
-		add_action( 'init', array( $this, 'load_localisation' ), 0 );
+		add_action( 'init', array( $this, 'load_localisation' ), 0 );		
+
+		$this->parent->register_post_type( 'directory', __( 'Directories', 'live-template-editor-directory' ), __( 'Directory', 'live-template-editor-directory' ), '', array(
+
+			'public' 				=> true,
+			'publicly_queryable' 	=> true,
+			'exclude_from_search' 	=> true,
+			'show_ui' 				=> true,
+			'show_in_menu'		 	=> 'directory',
+			'show_in_nav_menus' 	=> true,
+			'query_var' 			=> true,
+			'can_export' 			=> true,
+			'rewrite' 				=> array('slug'=>'directory'),
+			'capability_type' 		=> 'post',
+			'has_archive' 			=> false,
+			'hierarchical' 			=> false,
+			'show_in_rest' 			=> true,
+			//'supports' 			=> array( 'title', 'editor', 'author', 'excerpt', 'comments', 'thumbnail','page-attributes' ),
+			'supports' 				=> array( 'title','page-attributes' ),
+			'menu_position' 		=> 5,
+			'menu_icon' 			=> 'dashicons-admin-post',
+		));
+
+		add_action( 'add_meta_boxes', function(){
+
+			$this->parent->admin->add_meta_box (
+			
+				'directory_include',
+				__( 'Include', 'live-template-editor-directory' ), 
+				array("directory"),
+				'advanced'
+			);
+			
+			$this->parent->admin->add_meta_box (
+			
+				'directory_exclude',
+				__( 'Exclude', 'live-template-editor-directory' ), 
+				array("directory"),
+				'advanced'
+			);
+		
+			$this->parent->admin->add_meta_box (
+			
+				'directory_form',
+				__( 'Form', 'live-template-editor-directory' ), 
+				array("directory"),
+				'advanced'
+			);
+		});
 		
 		//init profiler 
 		
@@ -78,24 +118,455 @@ class LTPLE_Directory {
 	
 	public function directory_template( $template_path ){
 		
+		if( get_post_type() == 'directory' ){
+		
+			$template_path = $this->views . $this->parent->_dev . '/directory.php';
+		}
 		
 		return $template_path;
 	}
 	
 	public function directory_init(){	
 		
+		if( is_admin() ) {
+			
+			add_filter('directory_custom_fields', array( $this, 'get_directory_fields' ));
+		}
+		else{
+			
+			//get list of directories
+			
+			if( $this->list = get_posts(array( 
 		
+				'post_type' 		=> 'directory',
+				'orderby'		 	=> 'menu_order',
+				'order'		 		=> 'ASC',
+				'posts_per_page'	=> -1
+				
+			)) ){
+				
+				//Add Custom API Endpoints
+				
+				add_action( 'rest_api_init', function(){
+					
+					foreach( $this->list as $directory ){
+					
+						register_rest_route( 'ltple-directory/v1', '/' . $directory->post_name . '/', array(
+							
+							'methods' 	=> 'GET',
+							'callback' 	=> array($this,'get_directory_rows'),
+						));
+					}
+				});
+				
+				// get profile settings sidebar
+				
+				add_filter('ltple_profile_settings_sidebar', array( $this, 'get_profile_settings_sidebar' ));
+				
+				// get current directory profile settings
+
+				foreach( $this->list as $directory ){
+					
+					if( !empty($_GET['my-profile']) && $_GET['my-profile'] == $directory->post_name . '-directory' ){
+						
+						$this->current = $directory;
+						$this->current->form = get_post_meta($this->current->ID,'directory_form',true);
+						
+						// save directory data
+						
+						if( !empty($_POST['submit-directory']) && intval($_POST['submit-directory']) == $this->current->ID ){
+							
+							foreach( $this->current->form['name'] as $e => $name) {
+								
+								$field_id = $this->parent->_base . 'dir_' . $this->current->ID . '_' . str_replace(array('-',' '),'_',$name);
+								
+								if( !empty($name) && !empty($_POST[$field_id]) ){
+									
+									$value = ( $_POST[$field_id] != '0' ? $_POST[$field_id] : '' );
+									
+									update_user_meta( $this->parent->user->ID, $field_id, $value );
+								}
+							}
+						}
+						
+						// get profile form
+						
+						add_filter('ltple_profile_settings_' . $_GET['my-profile'], array( $this, 'get_profile_settings_form' ));
+						
+						break;
+					}
+				}
+			}
+		}
 	}
 	
-	public function directory_header(){
+	public function get_directory_fields(){
 		
-		//echo '<link rel="stylesheet" href="https://raw.githubusercontent.com/dbtek/bootstrap-vertical-tabs/master/bootstrap.vertical-tabs.css">';	
+		$fields=[];
+
+		$fields[]=array(
+			"metabox" =>
+				array('name' 	=> 'directory_include'),
+				'id'			=> 'directory_include',
+				'name'			=> 'directory_include',
+				'description'	=> '',
+				'type'			=> 'checkbox_multi',
+				'options' 		=> array( 
+				
+					'users' 		=> 'Users',
+					'sponsorship' 	=> 'Sponsors',
+				)
+		);
+
+		$fields[]=array(
+			"metabox" =>
+				array('name' 	=> 'directory_exclude'),
+				'id'			=> 'directory_exclude',
+				'name'			=> 'directory_exclude',
+				'description'	=> '',
+				'type'			=> 'checkbox_multi',
+				'options' 		=> array( 
+				
+					'sponsorship' 	=> 'Sponsors',
+				)
+		);
+		
+		$fields[]=array(
+			"metabox" =>
+				array('name' => "directory_form"),
+				'id'		=> "directory_form",
+				'name'		=> 'directory_form',
+				'label'		=> "",
+				'type'		=> 'form'
+		);
+
+		return $fields;
 	}
 	
-	public function directory_footer(){
+	
+	public function get_directory_users($directory) {
+
+		$directory_users = array();
 		
+		// set query arguments
 		
+		$args = array(
+		
+			//'role' 	=> 'Subscriber',
+			'fields'	=>	'all',
+		);
+			
+		if( $include = get_post_meta($directory->ID,'directory_include',true) ){
+			
+			$mq = 0;			
+			
+			// filter includes
+			
+			if( !in_array('users',$include) ){
+				
+				foreach( $include as $inc ){
+				
+					$args['meta_query'][$mq][] = array(
+
+						'key' 		=> $this->parent->_base . 'user-programs',
+						'value' 	=> $inc,
+						'compare' 	=> 'LIKE'							
+					);
+				}
+				
+				++$mq;
+			}
+
+			// filter exclude
+			/*
+			if( $exclude = get_post_meta($directory->ID,'directory_exclude',true) ){
+				
+				$args['meta_query'][$mq]['relation'] = 'OR';
+				
+				$args['meta_query'][$mq][] = array(
+
+					'key' 		=> $this->parent->_base . 'user-programs',
+					'compare' 	=> 'NOT EXISTS'							
+				);
+				
+				foreach( $exclude as $ex ){
+				
+					$args['meta_query'][$mq][] = array(
+
+						'key' 		=> $this->parent->_base . 'user-programs',
+						'value' 	=> $ex,
+						'compare' 	=> 'NOT LIKE'							
+					);
+				}
+				
+				++$mq;
+			}
+			*/
+			
+			// filter last seen
+
+			$args['meta_query'][$mq]['relation'] = 'OR';
+			
+			$args['meta_query'][$mq][] = array(
+
+				'key' 		=> $this->parent->_base . '_last_seen',
+				'value' 	=> 0,
+				'compare' 	=> '>'							
+			);
+			
+			++$mq;
+			
+			// filter request
+			
+			if( !empty($_GET['directory_form']) ){
+				
+				foreach( $_GET['directory_form'] as $name => $value ){
+					
+					if( $value != '0' ){
+						
+						$args['meta_query'][$mq]['relation'] = 'AND';
+						
+						if( is_array($value) ){
+							
+							$a = [];
+
+							foreach($value as $v){
+								
+								$a[] = array(
+
+									'key' 		=> $this->parent->_base . 'dir_' . $directory->ID . '_' . str_replace(array('-',' '),'_',$name),
+									'value' 	=> $v,
+									'compare' 	=> 'LIKE'							
+								);									
+							}
+							
+							$args['meta_query'][$mq][] = $a;								
+						}
+						else{
+							
+							$args['meta_query'][$mq][] = array(
+
+								'key' 		=> $this->parent->_base . 'dir_' . $directory->ID . '_' . str_replace(array('-',' '),'_',$name),
+								'value' 	=> $value,
+								'compare' 	=> '='							
+							);								
+						}
+					}
+				}
+				
+				++$mq;
+			}
+
+			$q = new WP_User_Query( $args );		
+			
+			if( $users = $q->get_results() ){
+
+				foreach($users as $user){
+					
+					if( $user_meta = get_user_meta($user->ID) ){
+
+						$user->description 	= ( isset($user_meta['description'][0]) ? $user_meta['description'][0] : '' );
+						$user->picture 		= ( isset($user_meta[$this->parent->_base . 'profile_picture'][0]) ? $user_meta[$this->parent->_base . 'profile_picture'][0] : get_avatar_url($user->ID) );
+						$user->url 			= ( !empty($user->user_url) ? $user->user_url : '' );
+						
+						$directory_users[] = $user;
+					}
+				}
+			}
+		}
+
+		return $directory_users;
 	}	
+	
+	public function get_directory_rows($request) {
+
+		$directory_rows = [];
+		
+		if( $this->parent->user->loggedin ){
+			
+			$directory_name = explode( '?', $this->parent->urls->current );
+			$directory_name = basename($directory_name[0]);
+			
+			if( $directory = get_page_by_path( $directory_name, OBJECT, 'directory' ) ){
+			
+				if($directory_users = $this->get_directory_users($directory)){
+				
+					foreach( $directory_users as $user ){
+						
+						$name = ( !empty( $user->display_name ) ? $user->display_name : $user->nickname );
+											
+						$item = [];
+						$item['avatar'] 		= '<img src="' . $user->picture . '" style="width:75px;height:75px;min-width:75px;min-height:75px;" />';
+						$item['name'] 			= '<a href="' . $this->parent->urls->editor . '?pr=' . $user->ID . '" target="_blank">' . ucfirst($name) . '</a>';
+						$item['description'] 	= $user->description;
+						$item['url'] 			= ( !empty($user->url) ? '<a target="_blank" href="' . $user->url . '"><span class="glyphicon glyphicon-new-window" aria-hidden="true"></span></a>' : '' );
+						
+						$directory_rows[] = $item;
+					}
+				}
+			}
+		}
+		
+		return $directory_rows;
+	}
+	
+	
+	public function get_profile_settings_sidebar(){
+		
+		if( !empty($this->list) ){
+		
+			echo'<li class="gallery_type_title">Directory settings</li>';
+			
+			$output = ( !empty($_GET['output']) ? $_GET['output'] : 'default' );	
+			
+			$currentTab = ( !empty($_GET['my-profile']) ? $_GET['my-profile'] : 'general-info' );	
+			
+			foreach( $this->list as $directory ){
+			
+				echo'<li'.( $currentTab == $directory->post_name . '-directory' ? ' class="active"' : '' ).'><a href="'.$this->parent->urls->editor . '?my-profile=' . $directory->post_name . '-directory&output='.$output.'">' . ucfirst( $directory->post_title ) . '</a></li>';
+			}
+		}
+	}
+	
+	public function get_profile_settings_form(){
+					
+		echo'<div class="tab-pane active" id="custom-profile">';
+		
+			echo'<form action="' . $this->parent->urls->current . '" method="post" class="tab-content row" style="margin:20px;">';
+				
+				echo '<input type="hidden" name="submit-directory" value="' . $this->current->ID . '" />';
+				
+				echo'<div class="col-xs-12 col-sm-6">';
+			
+					echo'<h3>' . $this->current->post_title . ' Directory</h3>';
+					
+				echo'</div>';			
+
+				echo'<div class="col-xs-12 col-sm-2 text-right">';
+					
+					echo'<a target="_blank" class="label label-warning" style="font-size: 13px;" href="'.$this->parent->urls->editor . '?pr='.$this->parent->user->ID . '">view profile</a>';
+					
+				echo'</div>';
+				
+				echo'<div class="col-xs-12 col-sm-2"></div>';
+				
+				echo'<div class="clearfix"></div>';
+			
+				echo'<div class="col-xs-12 col-sm-8">';
+
+					echo'<table class="form-table">';
+					
+						foreach( $this->current->form['name'] as $e => $name) {
+							
+							if( !empty($name) && $this->current->form['input'][$e] != 'title' && $this->current->form['input'][$e] != 'label' && $this->current->form['input'][$e] != 'submit' ){
+								
+								echo'<tr>';
+								
+									echo'<th><label for="'.$name.'">' . ucfirst( str_replace(array('-','_'),' ',$name) ) . '</label></th>';
+									
+									echo'<td>';
+									
+									if( $this->current->form['input'][$e] == 'checkbox' || $this->current->form['input'][$e] == 'select' ){
+									
+										if( $values = explode(PHP_EOL,$this->current->form['value'][$e]) ){
+											
+											// get field id
+											
+											$field_id = $this->parent->_base . 'dir_' . $this->current->ID . '_' . str_replace(array('-',' '),'_',$name);
+
+											// get required
+											
+											$required = ( ( empty($this->current->form['required'][$e]) || $this->current->form['required'][$e] == 'required' ) ? true : false );
+													
+											// get options
+													
+											$options = [];
+											
+											if( $this->current->form['input'][$e] == 'select' ){
+												
+												$options[] = '';
+											}
+									
+											foreach( $values as $value ){
+												
+												$value = trim($value);
+												
+												if( !empty($value) ){
+												
+													$options[strtolower($value)] = ucfirst($value);
+												}
+											}
+
+											// get input
+											
+											if( $this->current->form['input'][$e] == 'checkbox' ){
+									
+												echo $this->parent->admin->display_field( array(
+										
+													'type'				=> 'checkbox_multi',
+													'id'				=> $field_id,
+													'options' 			=> $options,
+													'required' 			=> false,
+													'description'		=> '',
+													//'style'			=> 'margin:0px 10px;',
+													
+												), $this->parent->user, false ); 
+											}
+											else{
+												
+												echo $this->parent->admin->display_field( array(
+										
+													'type'				=> 'select',
+													'id'				=> $field_id,
+													'options' 			=> $options,
+													'required' 			=> $required,
+													'description'		=> '',
+													//'style'			=> 'height:30px;padding:0px 5px;',
+													
+												), $this->parent->user, false ); 											
+											}
+										}									
+									}								
+									else{
+										
+										$html .= $this->display_field( array(
+								
+											'type'				=> $this->current->form['input'][$e],
+											'id'				=> $field_id,
+											'value' 			=> $this->current->form['value'][$e],
+											'required' 			=> $required,
+											'placeholder' 		=> '',
+											'description'		=> ''
+											
+										), $this->parent->user, false ); 
+									}
+									
+									echo'</td>';
+									
+								echo'</tr>';
+							}
+						}
+						
+					echo'</table>';
+					
+				echo'</div>';
+				
+				echo'<div class="clearfix"></div>';
+				
+				echo'<div class="col-xs-12 col-sm-6"></div>';
+
+				echo'<div class="col-xs-12 col-sm-2 text-right">';
+			
+					echo'<button class="btn btn-sm btn-warning" style="width:100%;margin-top: 10px;">Update</button>';
+					
+				echo'</div>';
+
+				echo'<div class="col-xs-12 col-sm-4"></div>';
+
+			echo'</form>';
+			
+		echo'</div>';		
+	}
 	
 	/**
 	 * Wrapper function to register a new post type

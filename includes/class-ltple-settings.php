@@ -71,22 +71,25 @@ class LTPLE_Directory_Settings {
 	public function settings_fields () {
 		
 		$settings = [];
-
-		$settings['test'] = array(
-			'title'					=> __( 'Test', $this->plugin->slug ),
+		
+		/*
+		$settings['directory'] = array(
+			'title'					=> __( 'Directory', $this->plugin->slug ),
 			'description'			=> '',
 			'fields'				=> array(
 				
 				array(
-					'id' 			=> 'directory_url',
-					'label'			=> __( 'Directory Url' , $this->plugin->slug ),
-					'description'	=> '',
-					'type'			=> 'text',
-					'default'		=> '',
-					'placeholder'	=> __( 'http://', $this->plugin->slug )
-				),				
+				
+					'type'				=> 'form',
+					'id'				=> 'user_directory',
+					'name'				=> 'user_directory',
+					'array' 			=> [],
+					'description'		=> ''
+					
+				),		
 			)
 		);
+		*/
 		
 		if( !empty($settings) ){
 		
@@ -113,13 +116,13 @@ class LTPLE_Directory_Settings {
 	public function add_menu_items () {
 		
 		//add menu in wordpress dashboard
-
+		
 		add_submenu_page(
 			'live-template-editor-client',
-			__( 'Directory test', $this->plugin->slug ),
-			__( 'Directory test', $this->plugin->slug ),
+			__( 'Directories', $this->plugin->slug ),
+			__( 'Directories', $this->plugin->slug ),
 			'edit_pages',
-			'edit.php?post_type=post'
+			'edit.php?post_type=directory'
 		);
 	}
 }
