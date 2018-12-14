@@ -4,7 +4,7 @@
 
 	echo get_header();
 
-		include($ltple->views . $ltple->_dev .'/navbar.php');
+		include($ltple->views . '/navbar.php');
 		
 		if(isset($_SESSION['message'])){ 
 		

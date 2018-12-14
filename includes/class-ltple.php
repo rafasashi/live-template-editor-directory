@@ -120,7 +120,7 @@ class LTPLE_Directory {
 		
 		if( get_post_type() == 'directory' ){
 		
-			$template_path = $this->views . $this->parent->_dev . '/directory.php';
+			$template_path = $this->views . '/directory.php';
 		}
 		
 		return $template_path;
