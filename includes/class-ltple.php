@@ -18,6 +18,9 @@ class LTPLE_Directory {
 	 * @since   1.0.0
 	 * @return  void
 	 */
+	 
+	var $list = null;
+	 
 	public function __construct ( $file='', $parent, $version = '1.0.0' ) {
 
 		$this->parent = $parent;
@@ -58,6 +61,10 @@ class LTPLE_Directory {
 		
 		add_action( 'init', array( $this, 'load_localisation' ), 0 );		
 
+		// add privacy settings
+				
+		add_filter('ltple_privacy_settings',array($this,'set_privacy_fields'));
+				
 		$this->parent->register_post_type( 'directory', __( 'Directories', 'live-template-editor-directory' ), __( 'Directory', 'live-template-editor-directory' ), '', array(
 
 			'public' 				=> true,
@@ -81,6 +88,22 @@ class LTPLE_Directory {
 
 		add_action( 'add_meta_boxes', function(){
 
+			$this->parent->admin->add_meta_box (
+			
+				'directory_tab',
+				__( 'Profile tab name', 'live-template-editor-directory' ), 
+				array("directory"),
+				'advanced'
+			);
+			
+			$this->parent->admin->add_meta_box (
+			
+				'directory_default_policy',
+				__( 'Default Policy', 'live-template-editor-directory' ), 
+				array("directory"),
+				'side'
+			);
+		
 			$this->parent->admin->add_meta_box (
 			
 				'directory_include',
@@ -126,76 +149,106 @@ class LTPLE_Directory {
 		return $template_path;
 	}
 	
-	public function directory_init(){	
+	public function get_directory_list(){
 		
-		if( is_admin() ) {
-			
-			add_filter('directory_custom_fields', array( $this, 'get_directory_fields' ));
-		}
-		else{
+		if( is_null($this->list) ){
 			
 			//get list of directories
 			
-			if( $this->list = get_posts(array( 
+			$this->list = get_posts(array( 
 		
 				'post_type' 		=> 'directory',
 				'orderby'		 	=> 'menu_order',
 				'order'		 		=> 'ASC',
 				'posts_per_page'	=> -1
 				
-			)) ){
+			));			
+		}
+		
+		return $this->list;
+	}
+	
+	public function directory_init(){	
+		
+		if( is_admin() ) {
+			
+			add_filter('directory_custom_fields', array( $this, 'get_directory_fields' ));
+		}
+		elseif( $this->list = $this->get_directory_list() ){
+			
+			//Add Custom API Endpoints
+			
+			add_action( 'rest_api_init', function(){
 				
-				//Add Custom API Endpoints
-				
-				add_action( 'rest_api_init', function(){
-					
-					foreach( $this->list as $directory ){
-					
-						register_rest_route( 'ltple-directory/v1', '/' . $directory->post_name . '/', array(
-							
-							'methods' 	=> 'GET',
-							'callback' 	=> array($this,'get_directory_rows'),
-						));
-					}
-				});
-				
-				// get profile settings sidebar
-				
-				add_filter('ltple_profile_settings_sidebar', array( $this, 'get_profile_settings_sidebar' ));
-				
-				// get current directory profile settings
-
 				foreach( $this->list as $directory ){
+				
+					register_rest_route( 'ltple-directory/v1', '/' . $directory->post_name . '/', array(
+						
+						'methods' 	=> 'GET',
+						'callback' 	=> array($this,'get_directory_rows'),
+					));
+				}
+			});
+
+			// get current directory profile settings
+			
+			foreach( $this->list as $directory ){
+				
+				if( !empty($_GET['tab']) && $_GET['tab'] == $directory->post_name . '-directory' ){
 					
-					if( !empty($_GET['my-profile']) && $_GET['my-profile'] == $directory->post_name . '-directory' ){
+					$this->current = $directory;
+					
+					$this->current->form = get_post_meta($this->current->ID,'directory_form',true);
+					
+					// save directory data
+					
+					if( !empty($_POST['submit-directory']) && intval($_POST['submit-directory']) == $this->current->ID ){
 						
-						$this->current = $directory;
-						$this->current->form = get_post_meta($this->current->ID,'directory_form',true);
-						
-						// save directory data
-						
-						if( !empty($_POST['submit-directory']) && intval($_POST['submit-directory']) == $this->current->ID ){
+						foreach( $this->current->form['name'] as $e => $name) {
 							
-							foreach( $this->current->form['name'] as $e => $name) {
+							$field_id = $this->parent->_base . 'dir_' . $this->current->ID . '_' . str_replace(array('-',' '),'_',$name);
+							
+							if( !empty($name) && !empty($_POST[$field_id]) ){
 								
-								$field_id = $this->parent->_base . 'dir_' . $this->current->ID . '_' . str_replace(array('-',' '),'_',$name);
+								$value = ( $_POST[$field_id] != '0' ? $_POST[$field_id] : '' );
 								
-								if( !empty($name) && !empty($_POST[$field_id]) ){
-									
-									$value = ( $_POST[$field_id] != '0' ? $_POST[$field_id] : '' );
-									
-									update_user_meta( $this->parent->user->ID, $field_id, $value );
-								}
+								update_user_meta( $this->parent->user->ID, $field_id, $value );
 							}
 						}
-						
-						// get profile form
-						
-						add_filter('ltple_profile_settings_' . $_GET['my-profile'], array( $this, 'get_profile_settings_form' ));
-						
-						break;
 					}
+					
+					// get profile form
+					
+					add_filter('ltple_profile_settings_' . $_GET['tab'], array( $this, 'get_profile_settings_form' ));
+					
+					break;
 				}
+			}
+
+			// get profile settings sidebar
+			
+			add_filter('ltple_profile_settings_sidebar', array( $this, 'get_profile_settings_sidebar' ));
+			
+			// get profile tabs
+			
+			add_action('ltple_profile_tabs', array( $this, 'get_profile_tabs' ));			
+		}
+	}
+	
+	public function set_privacy_fields(){
+
+		if( $this->list = $this->get_directory_list() ){
+			
+			foreach( $this->list as $directory ){
+				
+				$this->parent->profile->privacySettings['directory-' .  $directory->ID] = array(
+
+					'id' 			=> $this->parent->_base . 'policy_' . 'directory-' .  $directory->ID,
+					'label'			=> $directory->post_title,
+					'description'	=> 'Add me to the ' . $directory->post_title . ' directory',
+					'type'			=> 'switch',
+					'default'		=> get_post_meta($directory->ID,'directory_default_policy',true),
+				);
 			}
 		}
 	}
@@ -204,6 +257,25 @@ class LTPLE_Directory {
 		
 		$fields=[];
 
+		$fields[]=array(
+			"metabox" =>
+				array('name' 	=> 'directory_tab'),
+				'id'			=> 'directory_tab',
+				'name'			=> 'directory_tab',
+				'description'	=> 'Tab name in profile page',
+				'type'			=> 'text',
+		);
+		
+		$fields[]=array(
+			"metabox" =>
+				array('name' 	=> 'directory_default_policy'),
+				'id'			=> 'directory_default_policy',
+				'name'			=> 'directory_default_policy',
+				'description'	=> 'Default value of privacy policy',
+				'type'			=> 'select',
+				'options'		=> array('on'=>'on','off'=>'off'),
+		);
+		
 		$fields[]=array(
 			"metabox" =>
 				array('name' 	=> 'directory_include'),
@@ -245,27 +317,55 @@ class LTPLE_Directory {
 	
 	
 	public function get_directory_users($directory) {
-
+	
 		$directory_users = array();
-		
-		// set query arguments
-		
-		$args = array(
-		
-			//'role' 	=> 'Subscriber',
-			'fields'	=>	'all',
-		);
-			
+				
 		if( $include = get_post_meta($directory->ID,'directory_include',true) ){
+
+			// set query arguments
 			
-			$mq = 0;			
+			$args = array(
+			
+				'role__not_in' 	=> array('Administrator'),
+				'fields'		=> 'all',
+				'number'		=> 1000,
+				'orderby'		=> 'meta_value_num',
+				'meta_key'		=> $this->parent->_base . 'stars',
+				'order'			=> 'DESC',
+			);			
+			
+			$mq = 0;
+			
+			// filter policy
+			
+			$directory_policy = get_post_meta($directory->ID,'directory_default_policy',true);
+			
+			$args['meta_query'][$mq][] = array(
+
+				'key' 		=> $this->parent->_base . 'policy_directory-' . $directory->ID,
+				'value' 	=> 'on',
+				'compare' 	=> '='							
+			);			
+			
+			if( $directory_policy == 'on' ){
+				
+				$args['meta_query'][$mq]['relation'] = 'OR';
+
+				$args['meta_query'][$mq][] = array(
+
+					'key' 		=> $this->parent->_base . 'policy_directory-' . $directory->ID,
+					'compare' 	=> 'NOT EXISTS'				
+				);					
+			}
+			
+			++$mq;
 			
 			// filter includes
 			
 			if( !in_array('users',$include) ){
 				
 				foreach( $include as $inc ){
-				
+					
 					$args['meta_query'][$mq][] = array(
 
 						'key' 		=> $this->parent->_base . 'user-programs',
@@ -366,7 +466,7 @@ class LTPLE_Directory {
 					if( $user_meta = get_user_meta($user->ID) ){
 
 						$user->description 	= ( isset($user_meta['description'][0]) ? $user_meta['description'][0] : '' );
-						$user->picture 		= ( isset($user_meta[$this->parent->_base . 'profile_picture'][0]) ? $user_meta[$this->parent->_base . 'profile_picture'][0] : get_avatar_url($user->ID) );
+						$user->picture 		= $this->parent->image->get_avatar_url($user->ID);
 						$user->url 			= ( !empty($user->user_url) ? $user->user_url : '' );
 						
 						$directory_users[] = $user;
@@ -382,27 +482,23 @@ class LTPLE_Directory {
 
 		$directory_rows = [];
 		
-		if( $this->parent->user->loggedin ){
+		$directory_name = explode( '?', $this->parent->urls->current );
+		$directory_name = basename($directory_name[0]);
+		
+		if( $directory = get_page_by_path( $directory_name, OBJECT, 'directory' ) ){
+		
+			if( $directory_users = $this->get_directory_users($directory) ){
 			
-			$directory_name = explode( '?', $this->parent->urls->current );
-			$directory_name = basename($directory_name[0]);
-			
-			if( $directory = get_page_by_path( $directory_name, OBJECT, 'directory' ) ){
-			
-				if($directory_users = $this->get_directory_users($directory)){
-				
-					foreach( $directory_users as $user ){
-						
-						$name = ( !empty( $user->display_name ) ? $user->display_name : $user->nickname );
-											
-						$item = [];
-						$item['avatar'] 		= '<img src="' . $user->picture . '" style="width:75px;height:75px;min-width:75px;min-height:75px;" />';
-						$item['name'] 			= '<a href="' . $this->parent->urls->editor . '?pr=' . $user->ID . '" target="_blank">' . ucfirst($name) . '</a>';
-						$item['description'] 	= $user->description;
-						$item['url'] 			= ( !empty($user->url) ? '<a target="_blank" href="' . $user->url . '"><span class="glyphicon glyphicon-new-window" aria-hidden="true"></span></a>' : '' );
-						
-						$directory_rows[] = $item;
-					}
+				foreach( $directory_users as $user ){
+								
+					$item = [];
+					$item['avatar'] 		= '<img src="' . $user->picture . '" style="width:75px;height:75px;min-width:75px;min-height:75px;" />';
+					$item['name'] 			= '<a href="' . $this->parent->urls->profile . $user->ID . '/" target="_blank">' . ucfirst($user->nickname) . '</a>';
+					$item['description'] 	= $user->description;
+					$item['stars'] 			= get_user_meta($user->ID, $this->parent->_base . 'stars', true );
+					$item['url'] 			= ( !empty($user->url) ? '<a target="_blank" href="' . $user->url . '"><span class="glyphicon glyphicon-new-window" aria-hidden="true"></span></a>' : '' );
+					
+					$directory_rows[] = $item;
 				}
 			}
 		}
@@ -410,26 +506,114 @@ class LTPLE_Directory {
 		return $directory_rows;
 	}
 	
+	public function user_in_diretory($user, $directory_id){
+		
+		if( !$user_policy = get_user_meta($user->ID, $this->parent->_base . 'policy_directory-' . $directory_id, true ) ){
+		
+			$user_policy = get_post_meta($directory_id,'directory_default_policy',true);
+		}
+		
+		if( $user_policy == 'on' ){
+			
+			return true;
+		}
+		
+		return false;
+	}
+	
+	public function get_profile_tabs(){
+		
+		if( !empty($this->list) ){
+		
+			foreach( $this->list as $directory ){
+				
+				if( $this->user_in_diretory($this->parent->profile->user, $directory->ID) ){
+					
+					// get tab name
+					
+					$name = ucwords(strtolower($directory->directory_tab));
+					
+					$slug = sanitize_title($directory->directory_tab);
+					
+					$this->parent->profile->tabs[$slug]['name'] = $name;
+					
+					// get tab position
+					  
+					$this->parent->profile->tabs[$slug]['position'] = 2;
+					
+					// get tab content
+					
+					$this->parent->profile->tabs[$slug]['content'] = '<table class="form-table">';
+						
+						foreach( $directory->directory_form['name'] as $e => $name ){
+							
+							$input = $directory->directory_form['input'][$e];
+							
+							if( $input != 'submit' && $input != 'label' && $input != 'title' ){
+
+								$field_id = $this->parent->_base . 'dir_' . $directory->ID . '_' . str_replace(array('-',' '),'_',$name);
+					
+								$value = get_user_option($field_id,$this->parent->profile->user->ID);
+								
+								$this->parent->profile->tabs[$slug]['content'] .= '<tr>';
+								
+									$this->parent->profile->tabs[$slug]['content'] .= '<th style="width:200px;"><label for="'.$name.'">' . ucfirst( str_replace(array('-','_'),' ',$name) ) . '</label></th>';
+									
+									$this->parent->profile->tabs[$slug]['content'] .= '<td>';
+									
+										if( is_array($value) ){
+											
+											if( !empty($value) ){
+												
+												foreach($value as $v){
+													
+													$this->parent->profile->tabs[$slug]['content'] .=  ucwords($v);
+													$this->parent->profile->tabs[$slug]['content'] .=  '<br/>';
+												}
+											}
+											else{
+												
+												$this->parent->profile->tabs[$slug]['content'] .=  '-';
+											}
+										}
+										elseif( !empty($value) ){
+											
+											$this->parent->profile->tabs[$slug]['content'] .=  ucwords($value);
+										}
+										else{
+											
+											$this->parent->profile->tabs[$slug]['content'] .=  '-';
+										}
+									
+									$this->parent->profile->tabs[$slug]['content'] .= '</td>';
+									
+								$this->parent->profile->tabs[$slug]['content'] .= '</tr>';
+							}
+						}
+						
+					$this->parent->profile->tabs[$slug]['content'] .= '</table>';
+				}
+			}
+		}
+	}
 	
 	public function get_profile_settings_sidebar(){
 		
 		if( !empty($this->list) ){
 		
 			echo'<li class="gallery_type_title">Directory settings</li>';
-			
-			$output = ( !empty($_GET['output']) ? $_GET['output'] : 'default' );	
-			
-			$currentTab = ( !empty($_GET['my-profile']) ? $_GET['my-profile'] : 'general-info' );	
+
+			$currentTab = ( !empty($_GET['tab']) ? $_GET['tab'] : 'general-info' );	
 			
 			foreach( $this->list as $directory ){
 			
-				echo'<li'.( $currentTab == $directory->post_name . '-directory' ? ' class="active"' : '' ).'><a href="'.$this->parent->urls->editor . '?my-profile=' . $directory->post_name . '-directory&output='.$output.'">' . ucfirst( $directory->post_title ) . '</a></li>';
+				echo'<li'.( $currentTab == $directory->post_name . '-directory' ? ' class="active"' : '' ).'><a href="'.$this->parent->urls->profile . '?tab=' . $directory->post_name . '-directory">' . ucfirst( $directory->post_title ) . '</a></li>';
 			}
 		}
 	}
 	
 	public function get_profile_settings_form(){
-					
+		
 		echo'<div class="tab-pane active" id="custom-profile">';
 		
 			echo'<form action="' . $this->parent->urls->current . '" method="post" class="tab-content row" style="margin:20px;">';
@@ -444,7 +628,7 @@ class LTPLE_Directory {
 
 				echo'<div class="col-xs-12 col-sm-2 text-right">';
 					
-					echo'<a target="_blank" class="label label-warning" style="font-size: 13px;" href="'.$this->parent->urls->editor . '?pr='.$this->parent->user->ID . '">view profile</a>';
+					echo'<a target="_blank" class="label label-primary" style="font-size: 13px;" href="'.$this->parent->urls->profile . $this->parent->user->ID . '/">view profile</a>';
 					
 				echo'</div>';
 				
@@ -455,7 +639,7 @@ class LTPLE_Directory {
 				echo'<div class="col-xs-12 col-sm-8">';
 
 					echo'<table class="form-table">';
-					
+
 						foreach( $this->current->form['name'] as $e => $name) {
 							
 							if( !empty($name) && $this->current->form['input'][$e] != 'title' && $this->current->form['input'][$e] != 'label' && $this->current->form['input'][$e] != 'submit' ){
@@ -557,7 +741,7 @@ class LTPLE_Directory {
 
 				echo'<div class="col-xs-12 col-sm-2 text-right">';
 			
-					echo'<button class="btn btn-sm btn-warning" style="width:100%;margin-top: 10px;">Update</button>';
+					echo'<button class="btn btn-sm btn-primary" style="width:100%;margin-top: 10px;">Update</button>';
 					
 				echo'</div>';
 
