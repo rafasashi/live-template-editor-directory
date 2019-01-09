@@ -104,7 +104,13 @@
 											'field' 	=> 'name',
 											'sortable' 	=> 'true',
 											'content' 	=> 'Name',
-										),										
+										),
+										array(
+		
+											'field' 	=> 'stars',
+											'sortable' 	=> 'true',
+											'content' 	=> 'Stars',
+										),											
 										array(
 		
 											'field' 	=> 'description',
