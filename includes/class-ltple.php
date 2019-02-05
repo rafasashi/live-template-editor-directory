@@ -326,7 +326,6 @@ class LTPLE_Directory {
 			
 			$args = array(
 			
-				'role__not_in' 	=> array('Administrator'),
 				'fields'		=> 'all',
 				'number'		=> 1000,
 				'orderby'		=> 'meta_value_num',
@@ -529,21 +528,25 @@ class LTPLE_Directory {
 				
 				if( $this->user_in_diretory($this->parent->profile->user, $directory->ID) ){
 					
+					$tab = array();
+					
+					$has_values = false;
+					
 					// get tab name
 					
 					$name = ucwords(strtolower($directory->directory_tab));
 					
 					$slug = sanitize_title($directory->directory_tab);
 					
-					$this->parent->profile->tabs[$slug]['name'] = $name;
+					$tab['name'] = $name;
 					
 					// get tab position
 					  
-					$this->parent->profile->tabs[$slug]['position'] = 2;
+					$tab['position'] = 2;
 					
 					// get tab content
 					
-					$this->parent->profile->tabs[$slug]['content'] = '<table class="form-table">';
+					$tab['content'] = '<table class="form-table">';
 						
 						foreach( $directory->directory_form['name'] as $e => $name ){
 							
@@ -555,43 +558,50 @@ class LTPLE_Directory {
 					
 								$value = get_user_option($field_id,$this->parent->profile->user->ID);
 								
-								$this->parent->profile->tabs[$slug]['content'] .= '<tr>';
+								$tab['content'] .= '<tr>';
 								
-									$this->parent->profile->tabs[$slug]['content'] .= '<th style="width:200px;"><label for="'.$name.'">' . ucfirst( str_replace(array('-','_'),' ',$name) ) . '</label></th>';
+									$tab['content'] .= '<th style="width:200px;"><label for="'.$name.'">' . ucfirst( str_replace(array('-','_'),' ',$name) ) . '</label></th>';
 									
-									$this->parent->profile->tabs[$slug]['content'] .= '<td>';
+									$tab['content'] .= '<td>';
 									
 										if( is_array($value) ){
 											
 											if( !empty($value) ){
 												
+												$has_values = true;
+												
 												foreach($value as $v){
 													
-													$this->parent->profile->tabs[$slug]['content'] .=  ucwords($v);
-													$this->parent->profile->tabs[$slug]['content'] .=  '<br/>';
+													$tab['content'] .=  ucwords($v);
+													$tab['content'] .=  '<br/>';
 												}
 											}
 											else{
 												
-												$this->parent->profile->tabs[$slug]['content'] .=  '-';
+												$tab['content'] .=  '-';
 											}
 										}
 										elseif( !empty($value) ){
 											
-											$this->parent->profile->tabs[$slug]['content'] .=  ucwords($value);
+											$tab['content'] .=  ucwords($value);
 										}
 										else{
 											
-											$this->parent->profile->tabs[$slug]['content'] .=  '-';
+											$tab['content'] .=  '-';
 										}
 									
-									$this->parent->profile->tabs[$slug]['content'] .= '</td>';
+									$tab['content'] .= '</td>';
 									
-								$this->parent->profile->tabs[$slug]['content'] .= '</tr>';
+								$tab['content'] .= '</tr>';
 							}
 						}
 						
-					$this->parent->profile->tabs[$slug]['content'] .= '</table>';
+					$tab['content'] .= '</table>';
+					
+					if($has_values){
+					
+						$this->parent->profile->tabs[$slug] = $tab;
+					}
 				}
 			}
 		}
