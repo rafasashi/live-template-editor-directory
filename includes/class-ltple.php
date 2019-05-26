@@ -64,7 +64,18 @@ class LTPLE_Directory {
 		// add privacy settings
 				
 		add_filter('ltple_privacy_settings',array($this,'set_privacy_fields'));
+			
+		if( is_admin() ){
+		
+			add_action( 'show_user_profile', array( $this, 'get_user_directories' ),2,10 );
+			add_action( 'edit_user_profile', array( $this, 'get_user_directories' ) );
+			
+			// save user programs
 				
+			add_action( 'personal_options_update', array( $this, 'save_user_directories' ) );
+			add_action( 'edit_user_profile_update', array( $this, 'save_user_directories' ) );
+		}
+			
 		$this->parent->register_post_type( 'directory', __( 'Directories', 'live-template-editor-directory' ), __( 'Directory', 'live-template-editor-directory' ), '', array(
 
 			'public' 				=> true,
@@ -87,46 +98,12 @@ class LTPLE_Directory {
 		));
 
 		add_action( 'add_meta_boxes', function(){
-
-			$this->parent->admin->add_meta_box (
 			
-				'directory_tab',
-				__( 'Profile tab name', 'live-template-editor-directory' ), 
-				array("directory"),
-				'advanced'
-			);
+			global $post;
 			
-			$this->parent->admin->add_meta_box (
-			
-				'directory_default_policy',
-				__( 'Default Policy', 'live-template-editor-directory' ), 
-				array("directory"),
-				'side'
-			);
-		
-			$this->parent->admin->add_meta_box (
-			
-				'directory_include',
-				__( 'Include', 'live-template-editor-directory' ), 
-				array("directory"),
-				'advanced'
-			);
-			
-			$this->parent->admin->add_meta_box (
-			
-				'directory_exclude',
-				__( 'Exclude', 'live-template-editor-directory' ), 
-				array("directory"),
-				'advanced'
-			);
-		
-			$this->parent->admin->add_meta_box (
-			
-				'directory_form',
-				__( 'Form', 'live-template-editor-directory' ), 
-				array("directory"),
-				'advanced'
-			);
+			$fields = apply_filters( $post->post_type . '_custom_fields', array(), $post->post_type );
+						
+			$this->parent->admin->add_meta_boxes($fields);
 		});
 		
 		//init profiler 
@@ -138,6 +115,132 @@ class LTPLE_Directory {
 		add_filter( 'template_include', array( $this, 'directory_template'), 1 );	
 		
 	} // End __construct ()
+	
+	public function get_directory_fields(){
+		
+		$fields=[];
+
+		$fields[]=array(
+		
+			"metabox" => array(
+					
+				'name' 		=> 'directory_tab',
+				'title' 	=> __( 'Profile tab name', 'live-template-editor-directory' ), 
+				'screen'	=> array('directory'),
+				'context' 	=> 'advanced',
+			),
+			'id'			=> 'directory_tab',
+			'name'			=> 'directory_tab',
+			'description'	=> 'Tab name in profile page',
+			'type'			=> 'text',
+		);
+		
+		$fields[]=array(
+		
+			"metabox" => array(
+				
+				'name' 		=> 'directory_default_values',
+				'title' 	=> __( 'Default values', 'live-template-editor-directory' ), 
+				'screen'	=> array('directory'),
+				'context' 	=> 'side',
+			),
+			'id'			=> 'directory_default_policy',
+			'name'			=> 'directory_default_policy',
+			'label'			=> __( 'Privacy policy', 'live-template-editor-directory' ), 
+			'description'	=> 'Default value for privacy policy',
+			'type'			=> 'select',
+			'options'		=> array('on'=>'on','off'=>'off'),
+		);
+		
+		$fields[]=array(
+		
+			"metabox" => array(
+				
+				'name' 		=> 'directory_default_values',
+				'title' 	=> __( 'Default values', 'live-template-editor-directory' ), 
+				'screen'	=> array('directory'),
+				'context' 	=> 'side',
+			),
+			'id'			=> 'directory_default_approval',
+			'name'			=> 'directory_default_approval',
+			'label'			=> __( 'User approval', 'live-template-editor-directory' ), 
+			'description'	=> 'Default value for user approval',
+			'type'			=> 'select',
+			'options'		=> array('on'=>'on','off'=>'off'),
+		);
+
+		$fields[]=array(
+		
+			"metabox" => array(
+			
+				'name' => "directory_form",
+				'title' 	=> __( 'Filters', 'live-template-editor-directory' ), 
+				'screen'	=> array('directory'),
+				'context' 	=> 'advanced',
+				
+			),
+			'id'		=> "directory_form",
+			'name'		=> 'directory_form',
+			'label'		=> "",
+			'type'		=> 'form'
+		);
+
+		return $fields;
+	}	
+
+	public function get_user_directories( $user ) {
+		
+		if( current_user_can( 'administrator' ) ){
+			
+			$directories = $this->get_directory_list();
+			
+			echo '<div class="postbox" style="min-height:45px;">';
+				
+				echo '<h3 style="margin:10px;width:300px;display: inline-block;float: left;">' . __( 'Directories', 'live-template-editor-directory' ) . '</h3>';
+
+				echo '<div style="margin:10px 0 10px 0;display: inline-block;">';
+				
+					foreach( $directories as $directory ){
+						
+						$in_directory = $this->get_user_diretory_approval($user, $directory->ID);
+						
+						echo '<div style="width:100px;display:inline-block;font-weight:bold;">' . $directory->post_title . '</div>';
+						
+						echo '<label class="switch" for="in-directory-' . $directory->ID . '">';
+							
+							echo '<input class="form-control" type="checkbox" name="' . $this->parent->_base . 'in_directory[]" id="in-directory-' . $directory->ID . '" value="' . $directory->ID . '"'.( $in_directory == 'on' ? ' checked="checked"' : '' ).'>';
+							echo '<div class="slider round"></div>';
+						
+						echo '</label>';
+
+						echo '<br>';
+					}				
+						
+				echo'</div>';
+					
+			echo'</div>';
+		}	
+	}
+
+	public function save_user_directories( $user_id ) {
+		
+		if( !empty($_POST[$this->parent->_base . 'in_directory']) ){
+			
+			$directories = $this->get_directory_list();
+			
+			foreach( $directories as $directory ){
+				
+				if( in_array(strval($directory->ID),$_POST[$this->parent->_base . 'in_directory']) ){
+					
+					update_user_meta( $user_id, $this->parent->_base . 'in_directory-' . $directory->ID, 'on' );
+				}
+				else{
+					
+					update_user_meta( $user_id, $this->parent->_base . 'in_directory-' . $directory->ID, 'off' );
+				}
+			}
+		}
+	}	
 	
 	public function directory_template( $template_path ){
 		
@@ -253,223 +356,139 @@ class LTPLE_Directory {
 		}
 	}
 	
-	public function get_directory_fields(){
-		
-		$fields=[];
-
-		$fields[]=array(
-			"metabox" =>
-				array('name' 	=> 'directory_tab'),
-				'id'			=> 'directory_tab',
-				'name'			=> 'directory_tab',
-				'description'	=> 'Tab name in profile page',
-				'type'			=> 'text',
-		);
-		
-		$fields[]=array(
-			"metabox" =>
-				array('name' 	=> 'directory_default_policy'),
-				'id'			=> 'directory_default_policy',
-				'name'			=> 'directory_default_policy',
-				'description'	=> 'Default value of privacy policy',
-				'type'			=> 'select',
-				'options'		=> array('on'=>'on','off'=>'off'),
-		);
-		
-		$fields[]=array(
-			"metabox" =>
-				array('name' 	=> 'directory_include'),
-				'id'			=> 'directory_include',
-				'name'			=> 'directory_include',
-				'description'	=> '',
-				'type'			=> 'checkbox_multi',
-				'options' 		=> array( 
-				
-					'users' 		=> 'Users',
-					'sponsorship' 	=> 'Sponsors',
-				)
-		);
-
-		$fields[]=array(
-			"metabox" =>
-				array('name' 	=> 'directory_exclude'),
-				'id'			=> 'directory_exclude',
-				'name'			=> 'directory_exclude',
-				'description'	=> '',
-				'type'			=> 'checkbox_multi',
-				'options' 		=> array( 
-				
-					'sponsorship' 	=> 'Sponsors',
-				)
-		);
-		
-		$fields[]=array(
-			"metabox" =>
-				array('name' => "directory_form"),
-				'id'		=> "directory_form",
-				'name'		=> 'directory_form',
-				'label'		=> "",
-				'type'		=> 'form'
-		);
-
-		return $fields;
-	}
-	
-	
 	public function get_directory_users($directory) {
 	
 		$directory_users = array();
 				
-		if( $include = get_post_meta($directory->ID,'directory_include',true) ){
+		// set query arguments
+		
+		$args = array(
+		
+			'fields'		=> 'all',
+			'number'		=> 1000,
+			'orderby'		=> 'meta_value_num',
+			'meta_key'		=> $this->parent->_base . 'stars',
+			'order'			=> 'DESC',
+		);			
+		
+		$mq = 0;
+		
+		// filter policy
+		
+		$directory_policy = get_post_meta($directory->ID,'directory_default_policy',true);
+		
+		$args['meta_query'][$mq][] = array(
 
-			// set query arguments
+			'key' 		=> $this->parent->_base . 'policy_directory-' . $directory->ID,
+			'value' 	=> 'on',
+			'compare' 	=> '='							
+		);			
+		
+		if( $directory_policy == 'on' ){
 			
-			$args = array(
-			
-				'fields'		=> 'all',
-				'number'		=> 1000,
-				'orderby'		=> 'meta_value_num',
-				'meta_key'		=> $this->parent->_base . 'stars',
-				'order'			=> 'DESC',
-			);			
-			
-			$mq = 0;
-			
-			// filter policy
-			
-			$directory_policy = get_post_meta($directory->ID,'directory_default_policy',true);
-			
+			$args['meta_query'][$mq]['relation'] = 'OR';
+
 			$args['meta_query'][$mq][] = array(
 
 				'key' 		=> $this->parent->_base . 'policy_directory-' . $directory->ID,
-				'value' 	=> 'on',
-				'compare' 	=> '='							
-			);			
-			
-			if( $directory_policy == 'on' ){
-				
-				$args['meta_query'][$mq]['relation'] = 'OR';
+				'compare' 	=> 'NOT EXISTS'				
+			);					
+		}
+		
+		++$mq;
+		
+		
+		// filter approval
+		
+		$directory_approval = get_post_meta($directory->ID,'directory_default_approval',true);
+		
+		$args['meta_query'][$mq]['relation'] = 'OR';
+		
+		$args['meta_query'][$mq][] = array(
 
-				$args['meta_query'][$mq][] = array(
-
-					'key' 		=> $this->parent->_base . 'policy_directory-' . $directory->ID,
-					'compare' 	=> 'NOT EXISTS'				
-				);					
-			}
-			
-			++$mq;
-			
-			// filter includes
-			
-			if( !in_array('users',$include) ){
-				
-				foreach( $include as $inc ){
-					
-					$args['meta_query'][$mq][] = array(
-
-						'key' 		=> $this->parent->_base . 'user-programs',
-						'value' 	=> $inc,
-						'compare' 	=> 'LIKE'							
-					);
-				}
-				
-				++$mq;
-			}
-
-			// filter exclude
-			/*
-			if( $exclude = get_post_meta($directory->ID,'directory_exclude',true) ){
-				
-				$args['meta_query'][$mq]['relation'] = 'OR';
-				
-				$args['meta_query'][$mq][] = array(
-
-					'key' 		=> $this->parent->_base . 'user-programs',
-					'compare' 	=> 'NOT EXISTS'							
-				);
-				
-				foreach( $exclude as $ex ){
-				
-					$args['meta_query'][$mq][] = array(
-
-						'key' 		=> $this->parent->_base . 'user-programs',
-						'value' 	=> $ex,
-						'compare' 	=> 'NOT LIKE'							
-					);
-				}
-				
-				++$mq;
-			}
-			*/
-			
-			// filter last seen
-
-			$args['meta_query'][$mq]['relation'] = 'OR';
+			'key' 		=> $this->parent->_base . 'in_directory-' . $directory->ID,
+			'value' 	=> 'on',
+			'compare' 	=> '=',
+		);		
+		
+		if( $directory_approval != 'off' ){
 			
 			$args['meta_query'][$mq][] = array(
 
-				'key' 		=> $this->parent->_base . '_last_seen',
-				'value' 	=> 0,
-				'compare' 	=> '>'							
-			);
+				'key' 		=> $this->parent->_base . 'in_directory-' . $directory->ID,
+				'compare' 	=> 'NOT EXISTS'				
+			);				
+		}
+		
+		++$mq;
+		
+		// filter last seen
+
+		$args['meta_query'][$mq]['relation'] = 'OR';
+		
+		$args['meta_query'][$mq][] = array(
+
+			'key' 		=> $this->parent->_base . '_last_seen',
+			'value' 	=> 0,
+			'compare' 	=> '>'							
+		);
+		
+		++$mq;
+		
+		// filter request
+		
+		if( !empty($_GET['directory_form']) ){
 			
-			++$mq;
-			
-			// filter request
-			
-			if( !empty($_GET['directory_form']) ){
+			foreach( $_GET['directory_form'] as $name => $value ){
 				
-				foreach( $_GET['directory_form'] as $name => $value ){
+				if( $value != '0' ){
 					
-					if( $value != '0' ){
+					$args['meta_query'][$mq]['relation'] = 'AND';
+					
+					if( is_array($value) ){
 						
-						$args['meta_query'][$mq]['relation'] = 'AND';
-						
-						if( is_array($value) ){
-							
-							$a = [];
+						$a = [];
 
-							foreach($value as $v){
-								
-								$a[] = array(
-
-									'key' 		=> $this->parent->_base . 'dir_' . $directory->ID . '_' . str_replace(array('-',' '),'_',$name),
-									'value' 	=> $v,
-									'compare' 	=> 'LIKE'							
-								);									
-							}
+						foreach($value as $v){
 							
-							$args['meta_query'][$mq][] = $a;								
-						}
-						else{
-							
-							$args['meta_query'][$mq][] = array(
+							$a[] = array(
 
 								'key' 		=> $this->parent->_base . 'dir_' . $directory->ID . '_' . str_replace(array('-',' '),'_',$name),
-								'value' 	=> $value,
-								'compare' 	=> '='							
-							);								
+								'value' 	=> $v,
+								'compare' 	=> 'LIKE'							
+							);									
 						}
+						
+						$args['meta_query'][$mq][] = $a;								
+					}
+					else{
+						
+						$args['meta_query'][$mq][] = array(
+
+							'key' 		=> $this->parent->_base . 'dir_' . $directory->ID . '_' . str_replace(array('-',' '),'_',$name),
+							'value' 	=> $value,
+							'compare' 	=> '='							
+						);								
 					}
 				}
-				
-				++$mq;
 			}
-
-			$q = new WP_User_Query( $args );		
 			
-			if( $users = $q->get_results() ){
+			++$mq;
+		}
 
-				foreach($users as $user){
+		$q = new WP_User_Query( $args );		
+		
+		if( $users = $q->get_results() ){
+
+			foreach($users as $user){
+				
+				if( $user_meta = get_user_meta($user->ID) ){
+
+					$user->description 	= ( isset($user_meta['description'][0]) ? $user_meta['description'][0] : '' );
+					$user->picture 		= $this->parent->image->get_avatar_url($user->ID);
+					$user->url 			= ( !empty($user->user_url) ? $user->user_url : '' );
 					
-					if( $user_meta = get_user_meta($user->ID) ){
-
-						$user->description 	= ( isset($user_meta['description'][0]) ? $user_meta['description'][0] : '' );
-						$user->picture 		= $this->parent->image->get_avatar_url($user->ID);
-						$user->url 			= ( !empty($user->user_url) ? $user->user_url : '' );
-						
-						$directory_users[] = $user;
-					}
+					$directory_users[] = $user;
 				}
 			}
 		}
@@ -505,14 +524,41 @@ class LTPLE_Directory {
 		return $directory_rows;
 	}
 	
+	public function get_user_diretory_approval($user, $directory_id){
+		
+		$default_value = get_post_meta($directory_id,'directory_default_approval',true);
+		
+		if( empty($default_value) ){
+			
+			$default_value = 'on';
+		}
+		
+		$in_directory = get_user_meta( $user->ID, $this->parent->_base . 'in_directory-' . $directory_id, true );
+		
+		if( empty($in_directory) ){
+			
+			$in_directory = $default_value;
+		}
+
+		return $in_directory;
+	}
+	
 	public function user_in_diretory($user, $directory_id){
+		
+		// get user policy
 		
 		if( !$user_policy = get_user_meta($user->ID, $this->parent->_base . 'policy_directory-' . $directory_id, true ) ){
 		
 			$user_policy = get_post_meta($directory_id,'directory_default_policy',true);
 		}
 		
-		if( $user_policy == 'on' ){
+		// get user approval
+
+		$in_directory = $this->get_user_diretory_approval($user, $directory_id);
+
+		// is user in directory
+		
+		if( $user_policy == 'on' && $in_directory == 'on' ){
 			
 			return true;
 		}
@@ -521,6 +567,7 @@ class LTPLE_Directory {
 	}
 	
 	public function get_profile_tabs(){
+		
 		
 		if( !empty($this->list) ){
 		
@@ -546,57 +593,63 @@ class LTPLE_Directory {
 					
 					// get tab content
 					
-					$tab['content'] = '<table class="form-table">';
+					$tab['content'] = '<div class="col-xs-12 col-sm-7">';
 						
-						foreach( $directory->directory_form['name'] as $e => $name ){
+						$tab['content'] .= '<table class="form-table">';
 							
-							$input = $directory->directory_form['input'][$e];
-							
-							if( $input != 'submit' && $input != 'label' && $input != 'title' ){
+							foreach( $directory->directory_form['name'] as $e => $name ){
+								
+								$input = $directory->directory_form['input'][$e];
+								
+								if( $input != 'submit' && $input != 'label' && $input != 'title' ){
 
-								$field_id = $this->parent->_base . 'dir_' . $directory->ID . '_' . str_replace(array('-',' '),'_',$name);
-					
-								$value = get_user_option($field_id,$this->parent->profile->user->ID);
-								
-								$tab['content'] .= '<tr>';
-								
-									$tab['content'] .= '<th style="width:200px;"><label for="'.$name.'">' . ucfirst( str_replace(array('-','_'),' ',$name) ) . '</label></th>';
+									$field_id = $this->parent->_base . 'dir_' . $directory->ID . '_' . str_replace(array('-',' '),'_',$name);
+						
+									$value = get_user_option($field_id,$this->parent->profile->user->ID);
 									
-									$tab['content'] .= '<td>';
+									$tab['content'] .= '<tr>';
 									
-										if( is_array($value) ){
-											
-											if( !empty($value) ){
+										$tab['content'] .= '<th style="width:200px;"><label for="'.$name.'">' . ucfirst( str_replace(array('-','_'),' ',$name) ) . '</label></th>';
+										
+										$tab['content'] .= '<td>';
+										
+											if( is_array($value) ){
+												
+												if( !empty($value) ){
+													
+													$has_values = true;
+													
+													foreach($value as $v){
+														
+														$tab['content'] .=  ucwords($v);
+														$tab['content'] .=  '<br/>';
+													}
+												}
+												else{
+													
+													$tab['content'] .=  '-';
+												}
+											}
+											elseif( !empty($value) ){
 												
 												$has_values = true;
 												
-												foreach($value as $v){
-													
-													$tab['content'] .=  ucwords($v);
-													$tab['content'] .=  '<br/>';
-												}
+												$tab['content'] .=  ucwords($value);
 											}
 											else{
 												
 												$tab['content'] .=  '-';
 											}
-										}
-										elseif( !empty($value) ){
-											
-											$tab['content'] .=  ucwords($value);
-										}
-										else{
-											
-											$tab['content'] .=  '-';
-										}
-									
-									$tab['content'] .= '</td>';
-									
-								$tab['content'] .= '</tr>';
+										
+										$tab['content'] .= '</td>';
+										
+									$tab['content'] .= '</tr>';
+								}
 							}
-						}
+							
+						$tab['content'] .= '</table>';
 						
-					$tab['content'] .= '</table>';
+					$tab['content'] .= '</div>';
 					
 					if($has_values){
 					
@@ -624,142 +677,151 @@ class LTPLE_Directory {
 	
 	public function get_profile_settings_form(){
 		
-		echo'<div class="tab-pane active" id="custom-profile">';
+		$in_directory = $this->get_user_diretory_approval($this->parent->user, $this->current->ID);
 		
-			echo'<form action="' . $this->parent->urls->current . '" method="post" class="tab-content row" style="margin:20px;">';
-				
-				echo '<input type="hidden" name="submit-directory" value="' . $this->current->ID . '" />';
-				
-				echo'<div class="col-xs-12 col-sm-6">';
+		if( $in_directory == 'on' ){
 			
-					echo'<h3>' . $this->current->post_title . ' Directory</h3>';
-					
-				echo'</div>';			
-
-				echo'<div class="col-xs-12 col-sm-2 text-right">';
-					
-					echo'<a target="_blank" class="label label-primary" style="font-size: 13px;" href="'.$this->parent->urls->profile . $this->parent->user->ID . '/">view profile</a>';
-					
-				echo'</div>';
-				
-				echo'<div class="col-xs-12 col-sm-2"></div>';
-				
-				echo'<div class="clearfix"></div>';
+			echo'<div class="tab-pane active" id="custom-profile">';
 			
-				echo'<div class="col-xs-12 col-sm-8">';
-
-					echo'<table class="form-table">';
-
-						foreach( $this->current->form['name'] as $e => $name) {
-							
-							if( !empty($name) && $this->current->form['input'][$e] != 'title' && $this->current->form['input'][$e] != 'label' && $this->current->form['input'][$e] != 'submit' ){
-								
-								echo'<tr>';
-								
-									echo'<th><label for="'.$name.'">' . ucfirst( str_replace(array('-','_'),' ',$name) ) . '</label></th>';
-									
-									echo'<td>';
-									
-									if( $this->current->form['input'][$e] == 'checkbox' || $this->current->form['input'][$e] == 'select' ){
-									
-										if( $values = explode(PHP_EOL,$this->current->form['value'][$e]) ){
-											
-											// get field id
-											
-											$field_id = $this->parent->_base . 'dir_' . $this->current->ID . '_' . str_replace(array('-',' '),'_',$name);
-
-											// get required
-											
-											$required = ( ( empty($this->current->form['required'][$e]) || $this->current->form['required'][$e] == 'required' ) ? true : false );
-													
-											// get options
-													
-											$options = [];
-											
-											if( $this->current->form['input'][$e] == 'select' ){
-												
-												$options[] = '';
-											}
-									
-											foreach( $values as $value ){
-												
-												$value = trim($value);
-												
-												if( !empty($value) ){
-												
-													$options[strtolower($value)] = ucfirst($value);
-												}
-											}
-
-											// get input
-											
-											if( $this->current->form['input'][$e] == 'checkbox' ){
-									
-												echo $this->parent->admin->display_field( array(
-										
-													'type'				=> 'checkbox_multi',
-													'id'				=> $field_id,
-													'options' 			=> $options,
-													'required' 			=> false,
-													'description'		=> '',
-													//'style'			=> 'margin:0px 10px;',
-													
-												), $this->parent->user, false ); 
-											}
-											else{
-												
-												echo $this->parent->admin->display_field( array(
-										
-													'type'				=> 'select',
-													'id'				=> $field_id,
-													'options' 			=> $options,
-													'required' 			=> $required,
-													'description'		=> '',
-													//'style'			=> 'height:30px;padding:0px 5px;',
-													
-												), $this->parent->user, false ); 											
-											}
-										}									
-									}								
-									else{
-										
-										$html .= $this->display_field( array(
-								
-											'type'				=> $this->current->form['input'][$e],
-											'id'				=> $field_id,
-											'value' 			=> $this->current->form['value'][$e],
-											'required' 			=> $required,
-											'placeholder' 		=> '',
-											'description'		=> ''
-											
-										), $this->parent->user, false ); 
-									}
-									
-									echo'</td>';
-									
-								echo'</tr>';
-							}
-						}
+				echo'<form action="' . $this->parent->urls->current . '" method="post" class="tab-content row" style="margin:20px;">';
+					
+					echo '<input type="hidden" name="submit-directory" value="' . $this->current->ID . '" />';
+					
+					echo'<div class="col-xs-12 col-sm-6">';
+				
+						echo'<h3>' . $this->current->post_title . ' Directory</h3>';
 						
-					echo'</table>';
+					echo'</div>';			
+
+					echo'<div class="col-xs-12 col-sm-2 text-right">';
+						
+						echo'<a target="_blank" class="label label-primary" style="font-size: 13px;" href="'.$this->parent->urls->profile . $this->parent->user->ID . '/">view profile</a>';
+						
+					echo'</div>';
 					
-				echo'</div>';
-				
-				echo'<div class="clearfix"></div>';
-				
-				echo'<div class="col-xs-12 col-sm-6"></div>';
-
-				echo'<div class="col-xs-12 col-sm-2 text-right">';
-			
-					echo'<button class="btn btn-sm btn-primary" style="width:100%;margin-top: 10px;">Update</button>';
+					echo'<div class="col-xs-12 col-sm-2"></div>';
 					
-				echo'</div>';
+					echo'<div class="clearfix"></div>';
+				
+					echo'<div class="col-xs-12 col-sm-8">';
 
-				echo'<div class="col-xs-12 col-sm-4"></div>';
+						echo'<table class="form-table">';
 
-			echo'</form>';
+							foreach( $this->current->form['name'] as $e => $name) {
+								
+								if( !empty($name) && $this->current->form['input'][$e] != 'title' && $this->current->form['input'][$e] != 'label' && $this->current->form['input'][$e] != 'submit' ){
+									
+									echo'<tr>';
+									
+										echo'<th><label for="'.$name.'">' . ucfirst( str_replace(array('-','_'),' ',$name) ) . '</label></th>';
+										
+										echo'<td>';
+										
+										if( $this->current->form['input'][$e] == 'checkbox' || $this->current->form['input'][$e] == 'select' ){
+										
+											if( $values = explode(PHP_EOL,$this->current->form['value'][$e]) ){
+												
+												// get field id
+												
+												$field_id = $this->parent->_base . 'dir_' . $this->current->ID . '_' . str_replace(array('-',' '),'_',$name);
+
+												// get required
+												
+												$required = ( ( empty($this->current->form['required'][$e]) || $this->current->form['required'][$e] == 'required' ) ? true : false );
+														
+												// get options
+														
+												$options = [];
+												
+												if( $this->current->form['input'][$e] == 'select' ){
+													
+													$options[] = '';
+												}
+										
+												foreach( $values as $value ){
+													
+													$value = trim($value);
+													
+													if( !empty($value) ){
+													
+														$options[strtolower($value)] = ucfirst($value);
+													}
+												}
+
+												// get input
+												
+												if( $this->current->form['input'][$e] == 'checkbox' ){
+										
+													echo $this->parent->admin->display_field( array(
+											
+														'type'				=> 'checkbox_multi',
+														'id'				=> $field_id,
+														'options' 			=> $options,
+														'required' 			=> false,
+														'description'		=> '',
+														//'style'			=> 'margin:0px 10px;',
+														
+													), $this->parent->user, false ); 
+												}
+												else{
+													
+													echo $this->parent->admin->display_field( array(
+											
+														'type'				=> 'select',
+														'id'				=> $field_id,
+														'options' 			=> $options,
+														'required' 			=> $required,
+														'description'		=> '',
+														//'style'			=> 'height:30px;padding:0px 5px;',
+														
+													), $this->parent->user, false ); 											
+												}
+											}									
+										}								
+										else{
+											
+											$html .= $this->display_field( array(
+									
+												'type'				=> $this->current->form['input'][$e],
+												'id'				=> $field_id,
+												'value' 			=> $this->current->form['value'][$e],
+												'required' 			=> $required,
+												'placeholder' 		=> '',
+												'description'		=> ''
+												
+											), $this->parent->user, false ); 
+										}
+										
+										echo'</td>';
+										
+									echo'</tr>';
+								}
+							}
+							
+						echo'</table>';
+						
+					echo'</div>';
+					
+					echo'<div class="clearfix"></div>';
+					
+					echo'<div class="col-xs-12 col-sm-6"></div>';
+
+					echo'<div class="col-xs-12 col-sm-2 text-right">';
+				
+						echo'<button class="btn btn-sm btn-primary" style="width:100%;margin-top: 10px;">Update</button>';
+						
+					echo'</div>';
+
+					echo'<div class="col-xs-12 col-sm-4"></div>';
+
+				echo'</form>';
+				
+			echo'</div>';
+		}
+		else{
 			
-		echo'</div>';		
+			echo '<div class="alert alert-warning">To add your profile to this directory please contact us.</div>';
+		}
 	}
 	
 	/**
@@ -804,8 +866,9 @@ class LTPLE_Directory {
 	 */
 	public function enqueue_styles () {
 		
-		wp_register_style( $this->_token . '-frontend', esc_url( $this->assets_url ) . 'css/frontend.css', array(), $this->_version );
-		wp_enqueue_style( $this->_token . '-frontend' );
+		//wp_register_style( $this->_token . '-frontend', esc_url( $this->assets_url ) . 'css/frontend.css', array(), $this->_version );
+		//wp_enqueue_style( $this->_token . '-frontend' );
+	
 	} // End enqueue_styles ()
 
 	/**
@@ -816,8 +879,9 @@ class LTPLE_Directory {
 	 */
 	public function enqueue_scripts () {
 		
-		wp_register_script( $this->_token . '-frontend', esc_url( $this->assets_url ) . 'js/frontend' . $this->script_suffix . '.js', array( 'jquery' ), $this->_version );
-		wp_enqueue_script( $this->_token . '-frontend' );
+		//wp_register_script( $this->_token . '-frontend', esc_url( $this->assets_url ) . 'js/frontend' . $this->script_suffix . '.js', array( 'jquery' ), $this->_version );
+		//wp_enqueue_script( $this->_token . '-frontend' );
+	
 	} // End enqueue_scripts ()
 
 	/**

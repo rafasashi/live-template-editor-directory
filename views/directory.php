@@ -19,9 +19,9 @@
 			
 		// output directory
 			
-		echo'<div id="media_library">';
+		echo'<div id="media_library" class="wrapper">';
 
-			echo'<div class="col-xs-3 col-sm-2" style="padding:0;">';
+			echo '<div id="sidebar">';
 			
 				echo'<ul class="nav nav-tabs tabs-left">';
 					
@@ -46,7 +46,7 @@
 						
 			echo'</div>';
 
-			echo'<div class="col-xs-9 col-sm-10 library-content" style="border-left: 1px solid #ddd;background:#fff;padding-bottom:15px;padding-top:15px;min-height:2100px;">';
+			echo'<div id="content" class="library-content" style="border-left: 1px solid #ddd;background:#fff;padding-bottom:15px;padding-top:15px;min-height:2100px;">';
 
 				echo'<div class="tab-content">';
 
@@ -70,6 +70,12 @@
 
 								echo'<style>
 								
+									table {
+								
+										font-size:15px;
+										
+									}
+									
 									.fixed-table-toolbar {
 										
 										margin-top: -48px;

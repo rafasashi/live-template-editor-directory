@@ -203,7 +203,7 @@ class LTPLE_Directory_Admin_API {
 			break;
 			
 			case 'key_value':
-
+				
 				if( !isset($data['key']) || !isset($data['value']) ){
 
 					$data = ['key' => [ 0 => '' ], 'value' => [ 0 => '' ]];
@@ -442,7 +442,7 @@ class LTPLE_Directory_Admin_API {
 	 * @return void
 	 */
 	public function meta_box_content ( $post, $args ) {
-
+		
 		$fields = apply_filters( $post->post_type . '_custom_fields', array(), $post->post_type );
 
 		if ( ! is_array( $fields ) || 0 == count( $fields ) ) return;
