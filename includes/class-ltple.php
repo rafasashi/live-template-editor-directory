@@ -334,7 +334,7 @@ class LTPLE_Directory {
 			
 			// get profile tabs
 			
-			add_action('ltple_profile_tabs', array( $this, 'get_profile_tabs' ));			
+			add_action('ltple_profile_tabs', array( $this, 'get_profile_tabs' ),10,1);			
 		}
 	}
 	
@@ -504,9 +504,11 @@ class LTPLE_Directory {
 		$directory_name = basename($directory_name[0]);
 		
 		if( $directory = get_page_by_path( $directory_name, OBJECT, 'directory' ) ){
-		
-			if( $directory_users = $this->get_directory_users($directory) ){
 			
+			if( $directory_users = $this->get_directory_users($directory) ){
+				
+				$directory_form = get_post_meta($directory->ID,'directory_form',true);
+				
 				foreach( $directory_users as $user ){
 								
 					$item = [];
@@ -515,6 +517,42 @@ class LTPLE_Directory {
 					$item['description'] 	= $user->description;
 					$item['stars'] 			= get_user_meta($user->ID, $this->parent->_base . 'stars', true );
 					$item['url'] 			= ( !empty($user->url) ? '<a target="_blank" href="' . $user->url . '"><span class="glyphicon glyphicon-new-window" aria-hidden="true"></span></a>' : '' );
+					
+					if( !empty($directory_form['name']) ){
+						
+						$indexes = array();
+						
+						foreach( $directory_form['name'] as $e => $name ){
+							
+							$input = $directory_form['input'][$e];
+							
+							if( $input != 'submit' && $input != 'label' && $input != 'title' ){
+
+								$field_id = $this->parent->_base . 'dir_' . $directory->ID . '_' . str_replace(array('-',' '),'_',$name);
+					
+								$value = get_user_option($field_id,$user->ID);
+								
+								$slug = $directory->post_name  . $name;
+								
+								$id = 'directory_form[' . $name . ']';
+								
+								if( is_array($value) ){
+									
+									if( !empty($value) ){
+
+										foreach($value as $v){
+											
+											$item[$id.'['.$v.']'] = 'true';
+										}
+									}
+								}
+								elseif( !empty($value) ){
+
+									$item[$id] =  $value;
+								}
+							}
+						}						
+					}
 					
 					$directory_rows[] = $item;
 				}
@@ -566,8 +604,7 @@ class LTPLE_Directory {
 		return false;
 	}
 	
-	public function get_profile_tabs(){
-		
+	public function get_profile_tabs($tabs){
 		
 		if( !empty($this->list) ){
 		
@@ -590,7 +627,7 @@ class LTPLE_Directory {
 					// get tab position
 					  
 					$tab['position'] = 2;
-					
+						
 					// get tab content
 					
 					$tab['content'] = '<div class="col-xs-12 col-sm-7">';
@@ -652,12 +689,33 @@ class LTPLE_Directory {
 					$tab['content'] .= '</div>';
 					
 					if($has_values){
-					
-						$this->parent->profile->tabs[$slug] = $tab;
+						
+						if( $this->parent->profile->tab == $slug ){
+							
+							add_action( 'wp_enqueue_scripts',function(){
+
+								wp_register_style( $this->parent->_token . $this->parent->profile->tab, false, array());
+								wp_enqueue_style( $this->parent->_token . $this->parent->profile->tab );
+							
+								wp_add_inline_style( $this->parent->_token . $this->parent->profile->tab, '
+
+									#' . $this->parent->profile->tab . ' {
+										
+										margin-top:20px;
+									}
+									
+								');
+
+							},10 );								
+						}
+						
+						$tabs[$slug] = $tab;
 					}
 				}
 			}
 		}
+		
+		return $tabs;
 	}
 	
 	public function get_profile_settings_sidebar(){

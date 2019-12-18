@@ -23,13 +23,9 @@
 
 			echo '<div id="sidebar">';
 			
-				echo'<ul class="nav nav-tabs tabs-left">';
-					
-					echo'<li class="gallery_type_title">' . $post->post_title . '</li>';
+				echo'<div class="gallery_type_title gallery_head">' . $post->post_title . '</div>';
 
-				echo'</ul>';
-				
-				echo'<div style="margin:0 7px;">';
+				echo'<div style="padding:0 4px 0 9px;border-bottom:1px solid #ddd;height:calc(100vh - 134px);overflow-x:hidden;overflow-y:auto;">';
 				
 					echo $ltple->admin->display_field( array(
 			
@@ -46,7 +42,7 @@
 						
 			echo'</div>';
 
-			echo'<div id="content" class="library-content" style="border-left: 1px solid #ddd;background:#fff;padding-bottom:15px;padding-top:15px;min-height:2100px;">';
+			echo'<div id="content" class="library-content" style="border-left: 1px solid #ddd;background:#fbfbfb;padding-bottom:15px;padding-top:15px;min-height:2100px;">';
 
 				echo'<div class="tab-content">';
 
