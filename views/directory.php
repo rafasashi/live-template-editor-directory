@@ -25,7 +25,7 @@
 			
 				echo'<div class="gallery_type_title gallery_head">' . $post->post_title . '</div>';
 
-				echo'<div style="padding:0 4px 0 9px;border-bottom:1px solid #ddd;height:calc(100vh - 134px);overflow-x:hidden;overflow-y:auto;">';
+				echo'<div style="padding:0 4px 0 9px;height:auto;overflow-x:hidden;overflow-y:auto;">';
 				
 					echo $ltple->admin->display_field( array(
 			
@@ -42,7 +42,7 @@
 						
 			echo'</div>';
 
-			echo'<div id="content" class="library-content" style="border-left: 1px solid #ddd;background:#fbfbfb;padding-bottom:15px;padding-top:15px;min-height:2100px;">';
+			echo'<div id="content" class="library-content" style="border-left: 1px solid #ddd;background:#fbfbfb;padding-bottom:15px;padding-top:15px;min-height:100vh;">';
 
 				echo'<div class="tab-content">';
 
@@ -93,38 +93,44 @@
 							
 									// get table fields
 									
-									$fields = array(
+									$fields = array();
 										
-										array(
-		
-											'field' 	=> 'avatar',
-											'sortable' 	=> 'false',
-											'content' 	=> 'Avatar',
-										),
-										array(
+									$fields[] = array(
+	
+										'field' 	=> 'avatar',
+										'sortable' 	=> 'false',
+										'content' 	=> 'Avatar',
+									);
+									
+									$fields[] = array(
 		
 											'field' 	=> 'name',
 											'sortable' 	=> 'true',
 											'content' 	=> 'Name',
-										),
-										array(
-		
+									);
+									
+									if( $ltple->settings->options->enable_ranking == 'on' ){
+									
+										$fields[] = array(
+			
 											'field' 	=> 'stars',
 											'sortable' 	=> 'true',
 											'content' 	=> 'Stars',
-										),											
-										array(
+										);	
+									}
+									
+									$fields[] = array(
 		
-											'field' 	=> 'description',
-											'sortable' 	=> 'true',
-											'content' 	=> 'Description',
-										),
-										array(
+										'field' 	=> 'description',
+										'sortable' 	=> 'true',
+										'content' 	=> 'Description',
+									);
+									
+									$fields[] = array(
 		
-											'field' 	=> 'url',
-											'sortable' 	=> 'true',
-											'content' 	=> 'Site',
-										)											
+										'field' 	=> 'url',
+										'sortable' 	=> 'true',
+										'content' 	=> 'Site',
 									);
 								
 									// get table of results

@@ -224,13 +224,13 @@ class LTPLE_Directory {
 
 	public function save_user_directories( $user_id ) {
 		
-		if( !empty($_POST[$this->parent->_base . 'in_directory']) ){
-			
+		if(isset($_POST['submit'])){
+
 			$directories = $this->get_directory_list();
 			
 			foreach( $directories as $directory ){
 				
-				if( in_array(strval($directory->ID),$_POST[$this->parent->_base . 'in_directory']) ){
+				if( !empty($_POST[$this->parent->_base . 'in_directory']) && in_array(strval($directory->ID),$_POST[$this->parent->_base . 'in_directory']) ){
 					
 					update_user_meta( $user_id, $this->parent->_base . 'in_directory-' . $directory->ID, 'on' );
 				}
@@ -484,7 +484,7 @@ class LTPLE_Directory {
 				
 				if( $user_meta = get_user_meta($user->ID) ){
 
-					$user->description 	= ( isset($user_meta['description'][0]) ? $user_meta['description'][0] : '' );
+					$user->description 	= ( isset($user_meta['description'][0]) ? wp_trim_words($user_meta['description'][0],15) : '' );
 					$user->picture 		= $this->parent->image->get_avatar_url($user->ID);
 					$user->url 			= ( !empty($user->user_url) ? $user->user_url : '' );
 					
