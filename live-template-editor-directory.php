@@ -23,7 +23,7 @@
 	*/
 	
 	if ( ! defined( 'ABSPATH' ) ) exit;
-	
+
 	/**
 	 * Returns the main instance of LTPLE_Directory to prevent the need to use globals.
 	 *
@@ -31,6 +31,8 @@
 	 * @return object LTPLE_Directory
 	 */
 	function LTPLE_Directory ( $version = '1.0.0' ) {
+		
+		if ( ! class_exists( 'LTPLE_Client' ) ) return;
 		
 		$instance = LTPLE_Client::instance( __FILE__, $version );
 		
