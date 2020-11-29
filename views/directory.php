@@ -23,10 +23,10 @@
 
 			echo '<div id="sidebar">';
 			
-				echo'<div class="gallery_type_title gallery_head">' . $post->post_title . '</div>';
+				echo'<div class="gallery_type_title gallery_head">' . __('Directory','live-template-editor-directory') . '</div>';
 
-				echo'<div style="padding:0 4px 0 9px;height:auto;overflow-x:hidden;overflow-y:auto;">';
-				
+				echo'<div id="gallery_sidebar" style="padding:0 4px 0 9px;">';
+					
 					echo $ltple->admin->display_field( array(
 			
 						'type'				=> 'form',
@@ -36,13 +36,13 @@
 						'method' 			=> 'post',
 						'description'		=> ''
 						
-					), $post, false );	
+					), $post, false );
 
 				echo'</div>';
 						
 			echo'</div>';
 
-			echo'<div id="content" class="library-content" style="border-left: 1px solid #ddd;background:#fbfbfb;padding-bottom:15px;padding-top:15px;min-height:100vh;">';
+			echo'<div id="content" class="library-content" style="border-left: 1px solid #ddd;background:#fbfbfb;">';
 
 				echo'<div class="tab-content">';
 
@@ -93,46 +93,16 @@
 							
 									// get table fields
 									
-									$fields = array();
-										
-									$fields[] = array(
-	
-										'field' 	=> 'avatar',
-										'sortable' 	=> 'false',
-										'content' 	=> 'Avatar',
+									$fields = array(
+						
+										array(
+
+											'field' 	=> 'item',
+											'sortable' 	=> 'false',
+											'content' 	=> '',
+										),					
 									);
-									
-									$fields[] = array(
-		
-											'field' 	=> 'name',
-											'sortable' 	=> 'true',
-											'content' 	=> 'Name',
-									);
-									
-									if( $ltple->settings->options->enable_ranking == 'on' ){
-									
-										$fields[] = array(
-			
-											'field' 	=> 'stars',
-											'sortable' 	=> 'true',
-											'content' 	=> 'Stars',
-										);	
-									}
-									
-									$fields[] = array(
-		
-										'field' 	=> 'description',
-										'sortable' 	=> 'true',
-										'content' 	=> 'Description',
-									);
-									
-									$fields[] = array(
-		
-										'field' 	=> 'url',
-										'sortable' 	=> 'true',
-										'content' 	=> 'Site',
-									);
-								
+						
 									// get table of results
 
 									$ltple->api->get_table(
@@ -145,9 +115,13 @@
 										$toggle		= false,
 										$columns	= false,
 										$header		= true,
-										$pagination	= true,
+										$pagination	= 'scroll',
 										$form		= false,
-										$toolbar 	= 'toolbar'
+										$toolbar 	= 'toolbar',
+										$card		= true,
+										$itemHeight	= 300, 
+										$fixedHeight= true, 
+										$echo		= true
 									);	
 								}						
 							

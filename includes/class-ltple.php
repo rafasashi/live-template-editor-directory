@@ -365,12 +365,21 @@ class LTPLE_Directory {
 		$args = array(
 		
 			'fields'		=> 'all',
-			'number'		=> 1000,
+			'number'		=> 50,
 			'orderby'		=> 'meta_value_num',
 			'meta_key'		=> $this->parent->_base . 'stars',
 			'order'			=> 'DESC',
-		);			
+			'paged'			=> ( get_query_var( 'paged' ) ) ? get_query_var( 'paged' ) : ( !empty($_GET['page']) ? intval($_GET['page']) : 1 ),
+		);
 		
+		// search filter
+		
+		if( !empty($_GET['s']) ){
+			
+			$args['search'] 		= '*' . $_GET['s'] . '*';
+			//$args['search_columns'] = array( 'user_nicename' );
+		}
+
 		$mq = 0;
 		
 		// filter policy
@@ -437,9 +446,11 @@ class LTPLE_Directory {
 		
 		// filter request
 		
-		if( !empty($_GET['directory_form']) ){
+		if( !empty($_GET['filter']) ){
 			
-			foreach( $_GET['directory_form'] as $name => $value ){
+			parse_str($_GET['filter'],$filter);
+			
+			foreach( $filter['directory_form'] as $name => $value ){
 				
 				if( $value != '0' ){
 					
@@ -485,7 +496,9 @@ class LTPLE_Directory {
 				if( $user_meta = get_user_meta($user->ID) ){
 
 					$user->description 	= ( isset($user_meta['description'][0]) ? wp_trim_words($user_meta['description'][0],15) : '' );
-					$user->picture 		= $this->parent->image->get_avatar_url($user->ID);
+					$user->avatar 		= $this->parent->image->get_avatar_url($user->ID);
+					$user->banner 		= $this->parent->image->get_banner_url($user->ID);
+					$user->profile 		= $this->parent->urls->profile . $user->ID . '/';
 					$user->url 			= ( !empty($user->user_url) ? $user->user_url : '' );
 					
 					$directory_users[] = $user;
@@ -507,54 +520,51 @@ class LTPLE_Directory {
 			
 			if( $directory_users = $this->get_directory_users($directory) ){
 				
-				$directory_form = get_post_meta($directory->ID,'directory_form',true);
+				//$directory_tab = get_post_meta($directory->ID,'directory_tab',true);
 				
 				foreach( $directory_users as $user ){
 								
 					$item = [];
-					$item['avatar'] 		= '<img src="' . $user->picture . '" style="width:75px;height:75px;min-width:75px;min-height:75px;" />';
-					$item['name'] 			= '<a href="' . $this->parent->urls->profile . $user->ID . '/" target="_blank">' . ucfirst($user->nickname) . '</a>';
-					$item['description'] 	= $user->description;
-					$item['stars'] 			= get_user_meta($user->ID, $this->parent->_base . 'stars', true );
-					$item['url'] 			= ( !empty($user->url) ? '<a target="_blank" href="' . $user->url . '"><span class="glyphicon glyphicon-new-window" aria-hidden="true"></span></a>' : '' );
 					
-					if( !empty($directory_form['name']) ){
+					$item ='<div class="" id="user-' . $user->ID . '">';
 						
-						$indexes = array();
-						
-						foreach( $directory_form['name'] as $e => $name ){
+						$item.='<div style="position:relative;" class="panel panel-default">';
 							
-							$input = $directory_form['input'][$e];
+							$item.='<div class="banner-overlay" style="width:100%;height:160px;position:absolute;background-image:linear-gradient(to bottom right,#284d6b,' . $this->parent->settings->mainColor . ');opacity:.5;"></div>';
 							
-							if( $input != 'submit' && $input != 'label' && $input != 'title' ){
-
-								$field_id = $this->parent->_base . 'dir_' . $directory->ID . '_' . str_replace(array('-',' '),'_',$name);
-					
-								$value = get_user_option($field_id,$user->ID);
+							$item.='<div class="thumb_wrapper" style="background:url(' . $user->banner . ');background-size:cover;background-repeat:no-repeat;background-position:center center;"></div>'; //thumb_wrapper					
+							
+							$item.='<div class="panel-body">';
 								
-								$slug = $directory->post_name  . $name;
-								
-								$id = 'directory_form[' . $name . ']';
-								
-								if( is_array($value) ){
+								$item.='<a href="' . $user->profile . '" style="position:absolute;top:135px;">';
 									
-									if( !empty($value) ){
+									$item.='<img src="' . $user->avatar . '" style="height:50px;width:50px;border:5px solid #fff;background:#fff;border-radius:250px;">';
+									
+								$item.='</a>';
+								
+								$item.='<div class="gallery-item" style="margin-top:10px;line-height:25px;height:30px;overflow:hidden;font-size:15px;font-weight:bold;">';
+									
+									$item.='<b>' . ucfirst($user->nickname) . '</b>';
+								
+								$item.='</div>';
 
-										foreach($value as $v){
-											
-											$item[$id.'['.$v.']'] = 'true';
-										}
-									}
-								}
-								elseif( !empty($value) ){
+								$item.='<div style="font-size: 11px;"></div>';
+								 
+							$item.='</div>';
+							
+							$item.='<div style="background:#fff;border:none;" class="panel-footer text-right">';
+								
+								// about button
+								
+								$item.='<a class="btn btn-sm btn-primary" style="margin-right:4px;" href="'. $user->profile . '" title="More info about ' . ucfirst($user->nickname) . '">About</a>';
 
-									$item[$id] =  $value;
-								}
-							}
-						}						
-					}
-					
-					$directory_rows[] = $item;
+							$item.='</div>';
+						
+						$item.='</div>';
+						
+					$item.='</div>';
+
+					$directory_rows[]['item'] = $item;
 				}
 			}
 		}
