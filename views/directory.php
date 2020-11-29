@@ -121,7 +121,8 @@
 										$card		= true,
 										$itemHeight	= 300, 
 										$fixedHeight= true, 
-										$echo		= true
+										$echo		= true,
+										$pageSize	= $ltple->directory->per_page
 									);	
 								}						
 							

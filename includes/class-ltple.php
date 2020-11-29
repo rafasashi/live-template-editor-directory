@@ -12,14 +12,8 @@ class LTPLE_Directory {
 	 */
 	private static $_instance = null;
 
-	/**
-	 * Constructor function.
-	 * @access  public
-	 * @since   1.0.0
-	 * @return  void
-	 */
-	 
-	var $list = null;
+	var $list 		= null;
+	var $per_page 	= 50;
 	 
 	public function __construct ( $file='', $parent, $version = '1.0.0' ) {
 
@@ -365,7 +359,7 @@ class LTPLE_Directory {
 		$args = array(
 		
 			'fields'		=> 'all',
-			'number'		=> 50,
+			'number'		=> $this->per_page,
 			'orderby'		=> 'meta_value_num',
 			'meta_key'		=> $this->parent->_base . 'stars',
 			'order'			=> 'DESC',
