@@ -726,7 +726,7 @@ class LTPLE_Directory {
 	}
 	*/
 	
-	public function add_profile_description($content){
+	public function add_profile_description($description){
 		
 		if( !empty($this->list) ){
 		
@@ -740,65 +740,72 @@ class LTPLE_Directory {
 
 					// get tab content
 
-					$content .= '<h5>' . $name . '</h5>';
-
-					$content .= '<div class="table-responsive">';
+					$content = '';
+					
+					foreach( $directory->directory_form['name'] as $e => $name ){
 						
-						$content .= '<table class="table">';
-							
-							foreach( $directory->directory_form['name'] as $e => $name ){
-								
-								$input = $directory->directory_form['input'][$e];
-								
-								if( $input != 'submit' && $input != 'label' && $input != 'title' ){
-
-									$field_id = $this->parent->_base . 'dir_' . $directory->ID . '_' . str_replace(array('-',' '),'_',$name);
+						$input = $directory->directory_form['input'][$e];
 						
-									$values = get_user_option($field_id,$this->parent->profile->user->ID);
-										
-									$value = '';
+						if( $input != 'submit' && $input != 'label' && $input != 'title' ){
+
+							$field_id = $this->parent->_base . 'dir_' . $directory->ID . '_' . str_replace(array('-',' '),'_',$name);
+				
+							$values = get_user_option($field_id,$this->parent->profile->user->ID);
 								
-									if( is_array($values) ){
-										
-										if( !empty($values) ){
-											
-											foreach($values as $v){
-												
-												$value .=  ucwords($v);
-												$value .=  '<br/>';
-											}
-										}
-									}
-									elseif( !empty($values) ){
-										
-										$value .=  ucwords($values);
-									}
+							$value = '';
+						
+							if( is_array($values) ){
+								
+								if( !empty($values) ){
 									
-									if( !empty($value) ){
-											
-										$content .= '<tr>';
+									foreach($values as $v){
 										
-											$content .= '<th style="width:200px;"><label for="'.$name.'">' . ucfirst( str_replace(array('-','_'),' ',$name) ) . '</label></th>';
-											
-											$content .= '<td>';
-
-												$content .= $value;
-											
-											$content .= '</td>';
-											
-										$content .= '</tr>';
+										$value .=  ucwords($v);
+										$value .=  '<br/>';
 									}
 								}
 							}
+							elseif( !empty($values) ){
+								
+								$value .=  ucwords($values);
+							}
 							
-						$content .= '</table>';
-						
-					$content .= '</div>';
+							if( !empty($value) ){
+									
+								$content .= '<tr>';
+								
+									$content .= '<th style="width:200px;"><label for="'.$name.'">' . ucfirst( str_replace(array('-','_'),' ',$name) ) . '</label></th>';
+									
+									$content .= '<td>';
+
+										$content .= $value;
+									
+									$content .= '</td>';
+									
+								$content .= '</tr>';
+							}
+						}
+					}
+					
+					if( !empty($content) ){
+					
+						$description .= '<h5>' . $name . '</h5>';
+
+						$description .= '<div class="table-responsive">';
+							
+							$description .= '<table class="table">';
+								
+								$description .= $content;
+								
+							$description .= '</table>';
+							
+						$description .= '</div>';
+					}
 				}
 			}
 		}
 		
-		return $content;
+		return $description;
 	}
 	
 	public function get_profile_settings_sidebar(){
