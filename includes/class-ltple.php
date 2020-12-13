@@ -328,7 +328,9 @@ class LTPLE_Directory {
 			
 			// get profile tabs
 			
-			add_action('ltple_profile_tabs', array( $this, 'get_profile_tabs' ),10,1);			
+			//add_action('ltple_profile_tabs', array( $this, 'get_profile_tabs' ),10,1);			
+			
+			add_action('ltple_profile_about_description', array( $this, 'add_profile_description' ),10,1);
 		}
 	}
 	
@@ -524,13 +526,13 @@ class LTPLE_Directory {
 						
 						$item.='<div style="position:relative;" class="panel panel-default">';
 							
-							$item.='<div class="banner-overlay" style="width:100%;height:160px;position:absolute;background-image:linear-gradient(to bottom right,#284d6b,' . $this->parent->settings->mainColor . ');opacity:.5;"></div>';
+							$item.='<div class="banner-overlay" style="width:100%;height:200px;position:absolute;background-image:linear-gradient(to bottom right,#284d6b,' . $this->parent->settings->mainColor . ');opacity:.5;"></div>';
 							
 							$item.='<div class="thumb_wrapper" style="background:url(' . $user->banner . ');background-size:cover;background-repeat:no-repeat;background-position:center center;"></div>'; //thumb_wrapper					
 							
-							$item.='<div class="panel-body">';
+							$item.='<div class="panel-body" style="padding-bottom:0;">';
 								
-								$item.='<a href="' . $user->profile . '" style="position:absolute;top:135px;">';
+								$item.='<a href="' . $user->profile . '" style="position:absolute;top:175px;">';
 									
 									$item.='<img src="' . $user->avatar . '" style="height:50px;width:50px;border:5px solid #fff;background:#fff;border-radius:250px;">';
 									
@@ -608,6 +610,7 @@ class LTPLE_Directory {
 		return false;
 	}
 	
+	/*
 	public function get_profile_tabs($tabs){
 		
 		if( !empty($this->list) ){
@@ -720,6 +723,82 @@ class LTPLE_Directory {
 		}
 		
 		return $tabs;
+	}
+	*/
+	
+	public function add_profile_description($content){
+		
+		if( !empty($this->list) ){
+		
+			foreach( $this->list as $directory ){
+				
+				if( $this->user_in_diretory($this->parent->profile->user, $directory->ID) ){
+					
+					// get tab name
+					
+					$name = ucwords(strtolower($directory->directory_tab));
+
+					// get tab content
+
+					$content .= '<h5>' . $name . '</h5>';
+
+					$content .= '<div class="table-responsive">';
+						
+						$content .= '<table class="table">';
+							
+							foreach( $directory->directory_form['name'] as $e => $name ){
+								
+								$input = $directory->directory_form['input'][$e];
+								
+								if( $input != 'submit' && $input != 'label' && $input != 'title' ){
+
+									$field_id = $this->parent->_base . 'dir_' . $directory->ID . '_' . str_replace(array('-',' '),'_',$name);
+						
+									$values = get_user_option($field_id,$this->parent->profile->user->ID);
+										
+									$value = '';
+								
+									if( is_array($values) ){
+										
+										if( !empty($values) ){
+											
+											foreach($values as $v){
+												
+												$value .=  ucwords($v);
+												$value .=  '<br/>';
+											}
+										}
+									}
+									elseif( !empty($values) ){
+										
+										$value .=  ucwords($values);
+									}
+									
+									if( !empty($value) ){
+											
+										$content .= '<tr>';
+										
+											$content .= '<th style="width:200px;"><label for="'.$name.'">' . ucfirst( str_replace(array('-','_'),' ',$name) ) . '</label></th>';
+											
+											$content .= '<td>';
+
+												$content .= $value;
+											
+											$content .= '</td>';
+											
+										$content .= '</tr>';
+									}
+								}
+							}
+							
+						$content .= '</table>';
+						
+					$content .= '</div>';
+				}
+			}
+		}
+		
+		return $content;
 	}
 	
 	public function get_profile_settings_sidebar(){
