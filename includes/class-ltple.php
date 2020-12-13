@@ -736,7 +736,7 @@ class LTPLE_Directory {
 					
 					// get tab name
 					
-					$name = ucwords(strtolower($directory->directory_tab));
+					$title = ucwords(strtolower($directory->directory_tab));
 
 					// get tab content
 
@@ -789,7 +789,7 @@ class LTPLE_Directory {
 					
 					if( !empty($content) ){
 					
-						$description .= '<h5>' . $name . '</h5>';
+						$description .= '<h5>' . $title . '</h5>';
 
 						$description .= '<div class="table-responsive">';
 							
