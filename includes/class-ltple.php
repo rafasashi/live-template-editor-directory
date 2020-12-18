@@ -57,7 +57,7 @@ class LTPLE_Directory {
 
 		// add privacy settings
 				
-		add_filter('ltple_privacy_settings',array($this,'set_privacy_fields'));
+		add_filter('ltple_privacy_settings',array($this,'set_privacy_fields'),20);
 			
 		if( is_admin() ){
 		
@@ -259,7 +259,14 @@ class LTPLE_Directory {
 				'order'		 		=> 'ASC',
 				'posts_per_page'	=> -1
 				
-			));			
+			));
+
+			foreach( $this->list as $directory ){
+				
+				$directory->directory_icon = 'fa fa-map-marker-alt';
+				
+				$directory->directory_tab = get_post_meta($directory->ID,'directory_tab',true);
+			}
 		}
 		
 		return $this->list;
@@ -324,7 +331,7 @@ class LTPLE_Directory {
 
 			// get profile settings sidebar
 			
-			add_filter('ltple_profile_settings_sidebar', array( $this, 'get_profile_settings_sidebar' ));
+			add_filter('ltple_profile_settings_sidebar', array( $this, 'get_sidebar' ),11,3);
 			
 			// get profile tabs
 			
@@ -340,14 +347,30 @@ class LTPLE_Directory {
 			
 			foreach( $this->list as $directory ){
 				
-				$this->parent->profile->privacySettings['directory-' .  $directory->ID] = array(
+				if( $this->get_user_diretory_approval($this->parent->user, $directory->ID) == 'on' ){
+				
+					$this->parent->profile->privacySettings['directory-' .  $directory->ID] = array(
 
-					'id' 			=> $this->parent->_base . 'policy_' . 'directory-' .  $directory->ID,
-					'label'			=> $directory->post_title,
-					'description'	=> 'Add me to the ' . $directory->post_title . ' directory',
-					'type'			=> 'switch',
-					'default'		=> get_post_meta($directory->ID,'directory_default_policy',true),
-				);
+						'id' 			=> $this->parent->_base . 'policy_' . 'directory-' .  $directory->ID,
+						'label'			=> $directory->post_title,
+						'description'	=> 'Add me to the ' . $directory->post_title . ' directory',
+						'type'			=> 'switch',
+						'default'		=> get_post_meta($directory->ID,'directory_default_policy',true),
+					);
+				}
+				else{
+					
+					$this->parent->profile->privacySettings['directory-' .  $directory->ID] = array(
+
+						'id' 			=> $this->parent->_base . 'policy_' . 'directory-' .  $directory->ID,
+						'label'			=> $directory->post_title,
+						'type'			=> 'message',
+						'value'			=> '<a class="btn btn-xs btn-success" style="margin-bottom:10px;padding:5px 10px;" href="' . $this->parent->urls->primary . '/contact/" target="_blank">Request</a>',
+						'class'			=> 'directory-request',
+						'description'	=> 'Contact us to be added to this directory',
+						'style'			=> 'padding:0;',
+					);
+				}
 			}
 		}
 	}
@@ -515,8 +538,6 @@ class LTPLE_Directory {
 		if( $directory = get_page_by_path( $directory_name, OBJECT, 'directory' ) ){
 			
 			if( $directory_users = $this->get_directory_users($directory) ){
-				
-				//$directory_tab = get_post_meta($directory->ID,'directory_tab',true);
 				
 				foreach( $directory_users as $user ){
 								
@@ -737,7 +758,7 @@ class LTPLE_Directory {
 					// get tab name
 					
 					$title = ucwords(strtolower($directory->directory_tab));
-
+					
 					// get tab content
 
 					$content = '';
@@ -808,19 +829,20 @@ class LTPLE_Directory {
 		return $description;
 	}
 	
-	public function get_profile_settings_sidebar(){
+	public function get_sidebar($sidebar,$currentTab){
 		
 		if( !empty($this->list) ){
-		
-			echo'<li class="gallery_type_title">Directory settings</li>';
 
-			$currentTab = ( !empty($_GET['tab']) ? $_GET['tab'] : 'general-info' );	
-			
 			foreach( $this->list as $directory ){
-			
-				echo'<li'.( $currentTab == $directory->post_name . '-directory' ? ' class="active"' : '' ).'><a href="'.$this->parent->urls->profile . '?tab=' . $directory->post_name . '-directory">' . ucfirst( $directory->post_title ) . '</a></li>';
+				
+				if( $this->user_in_diretory($this->parent->user, $directory->ID) ){
+				
+					$sidebar .= '<li'.( $currentTab == $directory->post_name . '-directory' ? ' class="active"' : '' ).'><a href="'.$this->parent->urls->profile . '?tab=' . $directory->post_name . '-directory"><span class="' . $directory->directory_icon . '"></span> ' . ucfirst( $directory->directory_tab ) . '</a></li>';
+				}
 			}
 		}
+		
+		return $sidebar;
 	}
 	
 	public function get_profile_settings_form(){
