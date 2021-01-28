@@ -401,7 +401,18 @@ class LTPLE_Directory {
 
 		$mq = 0;
 		
-		// filter policy
+		// filter privacy policy
+		
+		$args['meta_query'][$mq][] = array(
+
+			'key' 		=> $this->parent->_base . 'policy_about-me',
+			'value' 	=> 'off',
+			'compare' 	=> '!='							
+		);
+		
+		++$mq;
+		
+		// filter directory policy
 		
 		$directory_policy = get_post_meta($directory->ID,'directory_default_policy',true);
 		
@@ -410,7 +421,7 @@ class LTPLE_Directory {
 			'key' 		=> $this->parent->_base . 'policy_directory-' . $directory->ID,
 			'value' 	=> 'on',
 			'compare' 	=> '='							
-		);			
+		);	
 		
 		if( $directory_policy == 'on' ){
 			
@@ -424,7 +435,6 @@ class LTPLE_Directory {
 		}
 		
 		++$mq;
-		
 		
 		// filter approval
 		
