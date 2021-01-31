@@ -403,11 +403,20 @@ class LTPLE_Directory {
 		
 		// filter privacy policy
 		
+		$args['meta_query'][$mq]['relation'] = 'OR';
+		
 		$args['meta_query'][$mq][] = array(
 
 			'key' 		=> $this->parent->_base . 'policy_about-me',
 			'value' 	=> 'off',
 			'compare' 	=> '!='							
+		);
+		
+		$args['meta_query'][$mq][] = array(
+
+			'key' 		=> $this->parent->_base . 'profile_claimed',
+			'value' 	=> 'false',
+			'compare' 	=> '='							
 		);
 		
 		++$mq;
