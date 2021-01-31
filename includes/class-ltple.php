@@ -385,11 +385,16 @@ class LTPLE_Directory {
 		
 			'fields'		=> 'all',
 			'number'		=> $this->per_page,
-			'orderby'		=> 'meta_value_num',
-			'meta_key'		=> $this->parent->_base . 'stars',
-			'order'			=> 'DESC',
 			'paged'			=> ( get_query_var( 'paged' ) ) ? get_query_var( 'paged' ) : ( !empty($_GET['page']) ? intval($_GET['page']) : 1 ),
 		);
+		
+		/*
+		// TODO consistency in pagination
+		
+		$args['orderby'] 	= 'meta_value_num';
+		$args['meta_key'] 	= $this->parent->_base . 'stars';
+		$args['order'] 		= 'DESC';
+		*/
 		
 		// search filter
 		
