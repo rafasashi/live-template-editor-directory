@@ -389,18 +389,21 @@ class LTPLE_Directory {
 		);
 		
 		/*
-		// TODO consistency in pagination
-		
-		$args['orderby'] 	= 'meta_value_num';
-		$args['meta_key'] 	= $this->parent->_base . 'stars';
-		$args['order'] 		= 'DESC';
+		if( $this->parent->settings->options->enable_ranking == 'on' ){
+
+			// TODO slow + pagination not consistent
+
+			$args['orderby'] 	= 'meta_value_num';
+			$args['meta_key'] 	= $this->parent->_base . 'stars';
+			$args['order'] 		= 'DESC';
+		}
 		*/
 		
 		// search filter
 		
 		if( !empty($_GET['s']) ){
 			
-			$args['search'] 		= '*' . $_GET['s'] . '*';
+			$args['search'] = '*' . $_GET['s'] . '*';
 			//$args['search_columns'] = array( 'user_nicename' );
 		}
 
@@ -408,22 +411,13 @@ class LTPLE_Directory {
 		
 		// filter privacy policy
 		
-		$args['meta_query'][$mq]['relation'] = 'OR';
-		
 		$args['meta_query'][$mq][] = array(
 
 			'key' 		=> $this->parent->_base . 'policy_about-me',
-			'value' 	=> 'off',
-			'compare' 	=> '!='							
-		);
-		
-		$args['meta_query'][$mq][] = array(
-
-			'key' 		=> $this->parent->_base . 'profile_claimed',
-			'value' 	=> 'false',
+			'value' 	=> 'on',
 			'compare' 	=> '='							
 		);
-		
+
 		++$mq;
 		
 		// filter directory policy
