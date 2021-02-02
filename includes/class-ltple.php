@@ -414,8 +414,16 @@ class LTPLE_Directory {
 		$args['meta_query'][$mq][] = array(
 
 			'key' 		=> $this->parent->_base . 'policy_about-me',
-			'value' 	=> 'on',
-			'compare' 	=> '='							
+			'compare' 	=> 'NOT EXISTS'							
+		);
+		
+		$args['meta_query'][$mq]['relation'] = 'OR';
+		
+		$args['meta_query'][$mq][] = array(
+
+			'key' 		=> $this->parent->_base . 'policy_about-me',
+			'value' 	=> 'off',
+			'compare' 	=> '!='							
 		);
 
 		++$mq;
