@@ -59,76 +59,68 @@
 							}
 								
 						echo'</ul>';
+					
+						echo'<style>
 						
-						echo'<div class="row">';
+							table {
 						
-							//echo'<div class="col-xs-12">';
-
-								echo'<style>
+								font-size:15px;
 								
-									table {
+							}
+							
+							.fixed-table-toolbar {
 								
-										font-size:15px;
-										
-									}
-									
-									.fixed-table-toolbar {
-										
-										margin-top: -48px;
-										margin-bottom: -6px;
-										display: inline-block;
-										float: right;
-									}
-									
-									.fixed-table-container {
-										
-										border:none !important;
-									}
-									
-								</style>';
+								margin-top: -48px;
+								margin-bottom: -6px;
+								display: inline-block;
+								float: right;
+							}
 							
-								// get directory
+							.fixed-table-container {
 								
-								if( $form = get_post_meta($post->ID, 'directory_form', true) ){
+								border:none !important;
+							}
 							
-									// get table fields
-									
-									$fields = array(
+						</style>';
+					
+						// get directory
 						
-										array(
-
-											'field' 	=> 'item',
-											'sortable' 	=> 'false',
-											'content' 	=> '',
-										),					
-									);
-						
-									// get table of results
-
-									$ltple->api->get_table(
-									
-										$ltple->urls->api . 'ltple-directory/v1/' . $post->post_name . '?' . http_build_query($_POST, '', '&amp;'), 
-										$fields, 
-										$trash		= false,
-										$export		= false,
-										$search		= true,
-										$toggle		= false,
-										$columns	= false,
-										$header		= true,
-										$pagination	= 'scroll',
-										$form		= false,
-										$toolbar 	= 'toolbar',
-										$card		= true,
-										$itemHeight	= 320, 
-										$fixedHeight= true, 
-										$echo		= true,
-										$pageSize	= $ltple->directory->per_page
-									);	
-								}						
+						if( $form = get_post_meta($post->ID, 'directory_form', true) ){
+					
+							// get table fields
 							
-							//echo'</div>';
-						
-						echo'</div>';
+							$fields = array(
+				
+								array(
+
+									'field' 	=> 'item',
+									'sortable' 	=> 'false',
+									'content' 	=> '',
+								),					
+							);
+				
+							// get table of results
+
+							$ltple->api->get_table(
+							
+								$ltple->urls->api . 'ltple-directory/v1/' . $post->post_name . '?' . http_build_query($_POST, '', '&amp;'), 
+								$fields, 
+								$trash		= false,
+								$export		= false,
+								$search		= true,
+								$toggle		= false,
+								$columns	= false,
+								$header		= true,
+								$pagination	= 'scroll',
+								$form		= false,
+								$toolbar 	= 'toolbar',
+								$card		= true,
+								$itemHeight	= 320, 
+								$fixedHeight= true, 
+								$echo		= true,
+								$pageSize	= $ltple->directory->per_page
+							);	
+						}
 					
 					echo'</div>';
 				
