@@ -199,8 +199,15 @@ class LTPLE_Directory {
 							echo '<div class="slider round"></div>';
 						
 						echo '</label>';
-
+						
 						echo '<br>';
+
+						if( $in_directory == 'on' ){
+							
+							echo $this->get_user_directory_form($user,$directory->ID);
+							
+							echo '<br>';
+						}
 					}				
 						
 				echo'</div>';
@@ -211,7 +218,7 @@ class LTPLE_Directory {
 
 	public function save_user_directories( $user_id ) {
 		
-		if(isset($_POST['submit'])){
+		if( isset($_POST['submit']) ){
 
 			$directories = $this->get_directory_list();
 			
@@ -220,14 +227,42 @@ class LTPLE_Directory {
 				if( !empty($_POST[$this->parent->_base . 'in_directory']) && in_array(strval($directory->ID),$_POST[$this->parent->_base . 'in_directory']) ){
 					
 					update_user_meta( $user_id, $this->parent->_base . 'in_directory-' . $directory->ID, 'on' );
+					
+					update_user_meta( $user_id, $this->parent->_base . 'policy_directory-' .  $directory->ID, 'on' );
 				}
 				else{
 					
 					update_user_meta( $user_id, $this->parent->_base . 'in_directory-' . $directory->ID, 'off' );
+					
+					update_user_meta( $user_id, $this->parent->_base . 'policy_directory-' .  $directory->ID, 'off' );
 				}
+				
+				$this->save_user_directory_fields($user_id,$directory->ID,$_POST);
 			}
 		}
 	}	
+	
+	public function save_user_directory_fields($user,$id,$fields){
+		
+		if( is_numeric($user) )
+		
+			$user = get_user_by('id',$user);
+		
+		if( $data = $this->get_directory_form_data($id,$user) ){
+			
+			foreach( $data['name'] as $e => $name) {
+				
+				$field_id = $this->parent->_base . 'dir_' . $id . '_' . str_replace(array('-',' '),'_',$name);
+				
+				if( !empty($name) && !empty($fields[$field_id]) ){
+					
+					$value = ( $fields[$field_id] != '0' ? $fields[$field_id] : '' );
+					
+					update_user_meta( $user->ID, $field_id, $value );
+				}
+			}
+		}
+	}
 	
 	public function directory_template( $template_path ){
 		
@@ -294,24 +329,12 @@ class LTPLE_Directory {
 				if( !empty($_GET['tab']) && $_GET['tab'] == $directory->post_name . '-directory' ){
 					
 					$this->current = $directory;
-					
-					$this->current->form = get_post_meta($this->current->ID,'directory_form',true);
-					
+
 					// save directory data
 					
 					if( !empty($_POST['submit-directory']) && intval($_POST['submit-directory']) == $this->current->ID ){
 						
-						foreach( $this->current->form['name'] as $e => $name) {
-							
-							$field_id = $this->parent->_base . 'dir_' . $this->current->ID . '_' . str_replace(array('-',' '),'_',$name);
-							
-							if( !empty($name) && !empty($_POST[$field_id]) ){
-								
-								$value = ( $_POST[$field_id] != '0' ? $_POST[$field_id] : '' );
-								
-								update_user_meta( $this->parent->user->ID, $field_id, $value );
-							}
-						}
+						$this->save_user_directory_fields($this->parent->user,$this->current->ID,$_POST);
 					}
 					
 					// get profile form
@@ -344,7 +367,7 @@ class LTPLE_Directory {
 				
 					$this->parent->profile->privacySettings['directory-' .  $directory->ID] = array(
 
-						'id' 			=> $this->parent->_base . 'policy_' . 'directory-' .  $directory->ID,
+						'id' 			=> $this->parent->_base . 'policy_directory-' .  $directory->ID,
 						'label'			=> $directory->post_title,
 						'description'	=> 'Add me to the ' . $directory->post_title . ' directory',
 						'type'			=> 'switch',
@@ -839,6 +862,16 @@ class LTPLE_Directory {
 		return $sidebar;
 	}
 	
+	public function get_directory_form_data($id){
+		
+		if( !isset($this->forms[$id]) ){
+			
+			$this->forms[$id] = get_post_meta($id,'directory_form',true);
+		}
+		
+		return $this->forms[$id];
+	}
+	
 	public function get_profile_settings_form(){
 		
 		$in_directory = $this->get_user_diretory_approval($this->parent->user, $this->current->ID);
@@ -868,102 +901,9 @@ class LTPLE_Directory {
 					echo'<div class="clearfix"></div>';
 				
 					echo'<div class="col-xs-12 col-sm-8">';
-
-						echo'<table class="form-table">';
-
-							foreach( $this->current->form['name'] as $e => $name) {
-								
-								if( !empty($name) && $this->current->form['input'][$e] != 'title' && $this->current->form['input'][$e] != 'label' && $this->current->form['input'][$e] != 'submit' ){
-									
-									echo'<tr>';
-									
-										echo'<th><label for="'.$name.'">' . ucfirst( str_replace(array('-','_'),' ',$name) ) . '</label></th>';
-										
-										echo'<td>';
-										
-										if( $this->current->form['input'][$e] == 'checkbox' || $this->current->form['input'][$e] == 'select' ){
-										
-											if( $values = explode(PHP_EOL,$this->current->form['value'][$e]) ){
-												
-												// get field id
-												
-												$field_id = $this->parent->_base . 'dir_' . $this->current->ID . '_' . str_replace(array('-',' '),'_',$name);
-
-												// get required
-												
-												$required = ( ( empty($this->current->form['required'][$e]) || $this->current->form['required'][$e] == 'required' ) ? true : false );
-														
-												// get options
-														
-												$options = [];
-												
-												if( $this->current->form['input'][$e] == 'select' ){
-													
-													$options[] = '';
-												}
-										
-												foreach( $values as $value ){
-													
-													$value = trim($value);
-													
-													if( !empty($value) ){
-													
-														$options[strtolower($value)] = ucfirst($value);
-													}
-												}
-
-												// get input
-												
-												if( $this->current->form['input'][$e] == 'checkbox' ){
-										
-													echo $this->parent->admin->display_field( array(
-											
-														'type'				=> 'checkbox_multi',
-														'id'				=> $field_id,
-														'options' 			=> $options,
-														'required' 			=> false,
-														'description'		=> '',
-														//'style'			=> 'margin:0px 10px;',
-														
-													), $this->parent->user, false ); 
-												}
-												else{
-													
-													echo $this->parent->admin->display_field( array(
-											
-														'type'				=> 'select',
-														'id'				=> $field_id,
-														'options' 			=> $options,
-														'required' 			=> $required,
-														'description'		=> '',
-														//'style'			=> 'height:30px;padding:0px 5px;',
-														
-													), $this->parent->user, false ); 											
-												}
-											}									
-										}								
-										else{
-											
-											$html .= $this->display_field( array(
-									
-												'type'				=> $this->current->form['input'][$e],
-												'id'				=> $field_id,
-												'value' 			=> $this->current->form['value'][$e],
-												'required' 			=> $required,
-												'placeholder' 		=> '',
-												'description'		=> ''
-												
-											), $this->parent->user, false ); 
-										}
-										
-										echo'</td>';
-										
-									echo'</tr>';
-								}
-							}
-							
-						echo'</table>';
 						
+						echo $this->get_user_directory_form($this->parent->user,$this->current->ID);
+
 					echo'</div>';
 					
 					echo'<div class="clearfix"></div>';
@@ -986,6 +926,111 @@ class LTPLE_Directory {
 			
 			echo '<div class="alert alert-warning">To add your profile to this directory please contact us.</div>';
 		}
+	}
+	
+	public function get_user_directory_form($user,$id){
+		
+		$form = '';
+		
+		if( $data = $this->get_directory_form_data($id,$user) ){
+
+			$form .= '<table class="form-table">';
+
+				foreach( $data['name'] as $e => $name) {
+					
+					if( !empty($name) && $data['input'][$e] != 'title' && $data['input'][$e] != 'label' && $data['input'][$e] != 'submit' ){
+						
+						$form .= '<tr>';
+						
+							$form .= '<th><label for="'.$name.'">' . ucfirst( str_replace(array('-','_'),' ',$name) ) . '</label></th>';
+							
+							$form .= '<td>';
+							
+							if( $data['input'][$e] == 'checkbox' || $data['input'][$e] == 'select' ){
+							
+								if( $values = explode(PHP_EOL,$data['value'][$e]) ){
+									
+									// get field id
+									
+									$field_id = $this->parent->_base . 'dir_' . $id . '_' . str_replace(array('-',' '),'_',$name);
+
+									// get required
+									
+									$required = ( ( empty($data['required'][$e]) || $data['required'][$e] == 'required' ) ? true : false );
+											
+									// get options
+											
+									$options = [];
+									
+									if( $data['input'][$e] == 'select' ){
+										
+										$options[] = '';
+									}
+							
+									foreach( $values as $value ){
+										
+										$value = trim($value);
+										
+										if( !empty($value) ){
+										
+											$options[strtolower($value)] = ucfirst($value);
+										}
+									}
+
+									// get input
+									
+									if( $data['input'][$e] == 'checkbox' ){
+							
+										$form .=  $this->parent->admin->display_field( array(
+								
+											'type'				=> 'checkbox_multi',
+											'id'				=> $field_id,
+											'options' 			=> $options,
+											'required' 			=> false,
+											'description'		=> '',
+											//'style'			=> 'margin:0px 10px;',
+											
+										), $user, false ); 
+									}
+									else{
+										
+										$form .=  $this->parent->admin->display_field( array(
+								
+											'type'				=> 'select',
+											'id'				=> $field_id,
+											'options' 			=> $options,
+											'required' 			=> $required,
+											'description'		=> '',
+											//'style'			=> 'height:30px;padding:0px 5px;',
+											
+										), $user, false ); 											
+									}
+								}									
+							}								
+							else{
+								
+								$form .=  $this->display_field( array(
+						
+									'type'				=> $data['input'][$e],
+									'id'				=> $field_id,
+									'value' 			=> $data['value'][$e],
+									'required' 			=> $required,
+									'placeholder' 		=> '',
+									'description'		=> ''
+									
+								), $user, false ); 
+							}
+							
+							$form .= '</td>';
+							
+						$form .= '</tr>';
+					}
+				}
+				
+			$form .= '</table>';
+		}
+		
+		return $form;
 	}
 	
 	/**
