@@ -90,7 +90,17 @@ class LTPLE_Directory {
 			'menu_position' 		=> 5,
 			'menu_icon' 			=> 'dashicons-admin-post',
 		));
-
+		
+		add_filter('ltple_layer_is_editable', function($is_editable,$post){
+			
+			if( $post->post_type == 'directory' )
+			
+				$is_editable = false;
+			
+			return $is_editable;
+			
+		},10,2 );
+		
 		add_action( 'add_meta_boxes', function(){
 			
 			global $post;
@@ -127,23 +137,6 @@ class LTPLE_Directory {
 			'name'			=> 'directory_tab',
 			'description'	=> 'Tab name in profile page',
 			'type'			=> 'text',
-		);
-		
-		$fields[]=array(
-		
-			"metabox" => array(
-				
-				'name' 		=> 'directory_default_values',
-				'title' 	=> __( 'Default values', 'live-template-editor-directory' ), 
-				'screen'	=> array('directory'),
-				'context' 	=> 'side',
-			),
-			'id'			=> 'directory_default_policy',
-			'name'			=> 'directory_default_policy',
-			'label'			=> __( 'Privacy policy', 'live-template-editor-directory' ), 
-			'description'	=> 'Default value for privacy policy',
-			'type'			=> 'select',
-			'options'		=> array('on'=>'on','off'=>'off'),
 		);
 		
 		$fields[]=array(
@@ -355,7 +348,7 @@ class LTPLE_Directory {
 						'label'			=> $directory->post_title,
 						'description'	=> 'Add me to the ' . $directory->post_title . ' directory',
 						'type'			=> 'switch',
-						'default'		=> get_post_meta($directory->ID,'directory_default_policy',true),
+						'default'		=> 'off',
 					);
 				}
 				else{
@@ -388,16 +381,12 @@ class LTPLE_Directory {
 			'paged'			=> ( get_query_var( 'paged' ) ) ? get_query_var( 'paged' ) : ( !empty($_GET['page']) ? intval($_GET['page']) : 1 ),
 		);
 		
-		/*
 		if( $this->parent->settings->options->enable_ranking == 'on' ){
-
-			// TODO slow + pagination not consistent
 
 			$args['orderby'] 	= 'meta_value_num';
 			$args['meta_key'] 	= $this->parent->_base . 'stars';
 			$args['order'] 		= 'DESC';
 		}
-		*/
 		
 		// search filter
 		
@@ -414,14 +403,6 @@ class LTPLE_Directory {
 		$args['meta_query'][$mq][] = array(
 
 			'key' 		=> $this->parent->_base . 'policy_about-me',
-			'compare' 	=> 'NOT EXISTS'							
-		);
-		
-		$args['meta_query'][$mq]['relation'] = 'OR';
-		
-		$args['meta_query'][$mq][] = array(
-
-			'key' 		=> $this->parent->_base . 'policy_about-me',
 			'value' 	=> 'off',
 			'compare' 	=> '!='							
 		);
@@ -429,30 +410,19 @@ class LTPLE_Directory {
 		++$mq;
 		
 		// filter directory policy
-		
-		$directory_policy = get_post_meta($directory->ID,'directory_default_policy',true);
-		
+
 		$args['meta_query'][$mq][] = array(
 
 			'key' 		=> $this->parent->_base . 'policy_directory-' . $directory->ID,
-			'value' 	=> 'on',
-			'compare' 	=> '='							
-		);	
-		
-		if( $directory_policy == 'on' ){
-			
-			$args['meta_query'][$mq]['relation'] = 'OR';
-
-			$args['meta_query'][$mq][] = array(
-
-				'key' 		=> $this->parent->_base . 'policy_directory-' . $directory->ID,
-				'compare' 	=> 'NOT EXISTS'				
-			);					
-		}
+			'value' 	=> 'off',
+			'compare' 	=> '!='							
+		);
 		
 		++$mq;
 		
 		// filter approval
+		
+		// TODO optimize query avoiding OR relation
 		
 		$directory_approval = get_post_meta($directory->ID,'directory_default_approval',true);
 		
@@ -477,8 +447,6 @@ class LTPLE_Directory {
 		++$mq;
 		
 		// filter last seen
-
-		$args['meta_query'][$mq]['relation'] = 'OR';
 		
 		$args['meta_query'][$mq][] = array(
 
@@ -640,7 +608,7 @@ class LTPLE_Directory {
 		
 		if( !$user_policy = get_user_meta($user->ID, $this->parent->_base . 'policy_directory-' . $directory_id, true ) ){
 		
-			$user_policy = get_post_meta($directory_id,'directory_default_policy',true);
+			$user_policy = 'off';
 		}
 		
 		// get user approval

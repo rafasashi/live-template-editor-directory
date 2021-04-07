@@ -1,7 +1,7 @@
 <?php
 /*
  * Plugin Name: Live Template Editor Directory
- * Version: 1.0.2.12
+ * Version: 1.0.2.13
  * Plugin URI: https://github.com/rafasashi
  * Description: Another Live Template Editor directory.
  * Author: Rafasashi
@@ -48,9 +48,6 @@
 	
 	add_filter( 'plugins_loaded', function(){
 
-		// Load plugin functions
-		require_once( 'includes/functions.php' );	
-		
 		// Load plugin class files
 
 		require_once( 'includes/class-ltple.php' );
