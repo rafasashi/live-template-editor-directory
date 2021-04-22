@@ -61,8 +61,8 @@ class LTPLE_Directory {
 			
 		if( is_admin() ){
 		
-			add_action( 'show_user_profile', array( $this, 'get_user_directories' ),2,10 );
-			add_action( 'edit_user_profile', array( $this, 'get_user_directories' ) );
+			add_action( 'show_user_profile', array( $this, 'show_user_directories' ),21,1 );
+			add_action( 'edit_user_profile', array( $this, 'show_user_directories' ),21,1 );
 			
 			// save user programs
 				
@@ -175,56 +175,49 @@ class LTPLE_Directory {
 		return $fields;
 	}	
 
-	public function get_user_directories( $user ) {
+	public function show_user_directories( $user ) {
 		
 		if( current_user_can( 'administrator' ) ){
-			
-			$directories = $this->get_directory_list();
-			
-			echo '<div class="postbox" style="min-height:45px;">';
-				
-				echo '<h3 style="margin:10px;width:300px;display: inline-block;float: left;">' . __( 'Directories', 'live-template-editor-directory' ) . '</h3>';
 
-				echo '<div style="margin:10px 0 10px 0;display: inline-block;">';
+			if( $directories = $this->get_directory_list() ){
+			
+				$form = '';
 				
-					foreach( $directories as $directory ){
-						
-						$in_directory = $this->get_user_diretory_approval($user, $directory->ID);
-						
-						echo '<div style="width:100px;display:inline-block;font-weight:bold;">' . $directory->post_title . '</div>';
-						
-						echo '<label class="switch" for="in-directory-' . $directory->ID . '">';
+				foreach( $directories as $directory ){
 							
-							echo '<input class="form-control" type="checkbox" name="' . $this->parent->_base . 'in_directory[]" id="in-directory-' . $directory->ID . '" value="' . $directory->ID . '"'.( $in_directory == 'on' ? ' checked="checked"' : '' ).'>';
-							echo '<div class="slider round"></div>';
-						
-						echo '</label>';
-						
-						echo '<br>';
+					$in_directory = $this->get_user_diretory_approval($user, $directory->ID);
 
-						if( $in_directory == 'on' ){
-							
-							echo $this->get_user_directory_form($user,$directory->ID);
-							
-							echo '<br>';
-						}
-					}				
-						
-				echo'</div>';
+					if( $in_directory == 'on' ){
 					
-			echo'</div>';
+						$form .= '<div class="postbox" style="min-height:45px;">';
+							
+							$form .= '<h3 style="float:left;margin:10px;width:300px;display: inline-block;float: left;">' . $directory->post_title . '</h3>';
+
+							$form .= '<div style="margin:10px 0 10px 0;display: inline-block;">';
+							
+								$form .= $this->get_user_directory_form($user,$directory->ID);			
+									
+							$form .= '</div>';
+								
+						$form .= '</div>';
+					}
+				}
+				
+				if( !empty($form) ){
+					
+					echo $form;
+				}
+			}
 		}	
 	}
 
 	public function save_user_directories( $user_id ) {
-		
-		if( isset($_POST['submit']) ){
 
-			$directories = $this->get_directory_list();
+		if( $directories = $this->get_directory_list() ){
 			
 			foreach( $directories as $directory ){
 				
-				if( !empty($_POST[$this->parent->_base . 'in_directory']) && in_array(strval($directory->ID),$_POST[$this->parent->_base . 'in_directory']) ){
+				if( !empty($_POST[$this->parent->_base . 'policy_directory-'.$directory->ID]) && $_POST[$this->parent->_base . 'policy_directory-'.$directory->ID] == 'on' ){
 					
 					update_user_meta( $user_id, $this->parent->_base . 'in_directory-' . $directory->ID, 'on' );
 					
