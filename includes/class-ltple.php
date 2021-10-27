@@ -212,23 +212,21 @@ class LTPLE_Directory {
 	}
 
 	public function save_user_directories( $user_id ) {
-
+		
 		if( $directories = $this->get_directory_list() ){
 			
 			foreach( $directories as $directory ){
 				
+				$status = 'off';
+				
 				if( !empty($_POST[$this->parent->_base . 'policy_directory-'.$directory->ID]) && $_POST[$this->parent->_base . 'policy_directory-'.$directory->ID] == 'on' ){
 					
-					update_user_meta( $user_id, $this->parent->_base . 'in_directory-' . $directory->ID, 'on' );
-					
-					update_user_meta( $user_id, $this->parent->_base . 'policy_directory-' .  $directory->ID, 'on' );
+					$status = 'on';
 				}
-				else{
+				
+				update_user_meta( $user_id, $this->parent->_base . 'in_directory-' . $directory->ID, $status );
 					
-					update_user_meta( $user_id, $this->parent->_base . 'in_directory-' . $directory->ID, 'off' );
-					
-					update_user_meta( $user_id, $this->parent->_base . 'policy_directory-' .  $directory->ID, 'off' );
-				}
+				update_user_meta( $user_id, $this->parent->_base . 'policy_directory-' .  $directory->ID, $status );
 				
 				$this->save_user_directory_fields($user_id,$directory->ID,$_POST);
 			}
