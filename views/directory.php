@@ -5,17 +5,6 @@
 	echo get_header();
 
 		include($ltple->views . '/navbar.php');
-		
-		if(isset($_SESSION['message'])){ 
-		
-			//output message
-		
-			echo $_SESSION['message'];
-			
-			//reset message
-			
-			$_SESSION['message'] ='';
-		}
 			
 		// output directory
 			

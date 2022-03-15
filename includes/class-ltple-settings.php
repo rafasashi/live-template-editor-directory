@@ -54,12 +54,6 @@ class LTPLE_Directory_Settings {
 		
 		//add menu in wordpress dashboard
 		
-		add_submenu_page(
-			'edit.php?post_type=live-editor',
-			__( 'Directories', $this->plugin->slug ),
-			__( 'Directories', $this->plugin->slug ),
-			'edit_pages',
-			'edit.php?post_type=directory'
-		);
+		
 	}
 }

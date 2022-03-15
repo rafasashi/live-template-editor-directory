@@ -76,7 +76,7 @@ class LTPLE_Directory {
 			'publicly_queryable' 	=> true,
 			'exclude_from_search' 	=> true,
 			'show_ui' 				=> true,
-			'show_in_menu'		 	=> 'directory',
+			'show_in_menu'		 	=> true,
 			'show_in_nav_menus' 	=> true,
 			'query_var' 			=> true,
 			'can_export' 			=> true,
@@ -87,8 +87,8 @@ class LTPLE_Directory {
 			'show_in_rest' 			=> true,
 			//'supports' 			=> array( 'title', 'editor', 'author', 'excerpt', 'comments', 'thumbnail','page-attributes' ),
 			'supports' 				=> array( 'title','page-attributes' ),
-			'menu_position' 		=> 5,
-			'menu_icon' 			=> 'dashicons-admin-post',
+			'menu_position' 		=> 10,
+			'menu_icon' 			=> 'dashicons-open-folder',
 		));
 		
 		add_filter('ltple_layer_is_editable', function($is_editable,$post){
@@ -1092,8 +1092,9 @@ class LTPLE_Directory {
 	 */
 	public function admin_enqueue_styles ( $hook = '' ) {
 		
-		wp_register_style( $this->_token . '-admin', esc_url( $this->assets_url ) . 'css/admin.css', array(), $this->_version );
-		wp_enqueue_style( $this->_token . '-admin' );
+		//wp_register_style( $this->_token . '-admin', esc_url( $this->assets_url ) . 'css/admin.css', array(), $this->_version );
+		//wp_enqueue_style( $this->_token . '-admin' );
+	
 	} // End admin_enqueue_styles ()
 
 	/**
