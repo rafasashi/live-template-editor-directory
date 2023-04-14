@@ -1,7 +1,7 @@
 <?php
 /*
  * Plugin Name: Live Template Editor Directory
- * Version: 1.0.2.18
+ * Version: 1.0.2.19
  * Plugin URI: https://github.com/rafasashi
  * Description: Another Live Template Editor directory.
  * Author: Rafasashi

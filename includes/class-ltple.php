@@ -354,7 +354,7 @@ class LTPLE_Directory {
 			
 			foreach( $this->list as $directory ){
 				
-				if( $this->get_user_diretory_approval($this->parent->user, $directory->ID) == 'on' ){
+				if( $this->get_default_directory_approval($directory->ID) == 'on' ){
 				
 					$this->parent->profile->privacySettings['directory-' .  $directory->ID] = array(
 
@@ -597,7 +597,7 @@ class LTPLE_Directory {
 		return $directory_rows;
 	}
 	
-	public function get_user_diretory_approval($user, $directory_id){
+	public function get_default_directory_approval($directory_id){
 		
 		$default_value = get_post_meta($directory_id,'directory_default_approval',true);
 		
@@ -605,6 +605,13 @@ class LTPLE_Directory {
 			
 			$default_value = 'on';
 		}
+		
+		return $default_value;
+	}
+	
+	public function get_user_diretory_approval($user,$directory_id){
+		
+		$default_value = $this->get_default_directory_approval($directory_id);
 		
 		$in_directory = get_user_meta( $user->ID, $this->parent->_base . 'in_directory-' . $directory_id, true );
 		
