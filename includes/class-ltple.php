@@ -139,19 +139,32 @@ class LTPLE_Directory {
 			'type'			=> 'text',
 		);
 		
+		$metabox = array(
+				
+			'name' 		=> 'directory_default_values',
+			'title' 	=> __( 'Default values', 'live-template-editor-directory' ), 
+			'screen'	=> array('directory'),
+			'context' 	=> 'side',
+		);
+		
 		$fields[]=array(
 		
-			"metabox" => array(
-				
-				'name' 		=> 'directory_default_values',
-				'title' 	=> __( 'Default values', 'live-template-editor-directory' ), 
-				'screen'	=> array('directory'),
-				'context' 	=> 'side',
-			),
+			'metabox' 		=> $metabox,
 			'id'			=> 'directory_default_approval',
 			'name'			=> 'directory_default_approval',
-			'label'			=> __( 'User approval', 'live-template-editor-directory' ), 
-			'description'	=> 'Default value for user approval',
+			'label'			=> __( 'Directory approval', 'live-template-editor-directory' ), 
+			'description'	=> 'Default value for directory approval',
+			'type'			=> 'select',
+			'options'		=> array('on'=>'on','off'=>'off'),
+		);
+		
+		$fields[]=array(
+		
+			'metabox' 		=> $metabox,
+			'id'			=> 'directory_default_privacy',
+			'name'			=> 'directory_default_privacy',
+			'label'			=> __( 'User privacy', 'live-template-editor-directory' ), 
+			'description'	=> 'Default value for user privacy',
 			'type'			=> 'select',
 			'options'		=> array('on'=>'on','off'=>'off'),
 		);
@@ -185,22 +198,32 @@ class LTPLE_Directory {
 				
 				foreach( $directories as $directory ){
 							
-					$in_directory = $this->get_user_diretory_approval($user, $directory->ID);
+					$in_directory = $this->get_user_directory_approval($user, $directory->ID);
 
-					if( $in_directory == 'on' ){
+					$form .= '<div class="postbox" style="min-height:45px;">';
+						
+						$form .= '<h3 style="float:left;margin:10px;width:300px;display: inline-block;float: left;">' . $directory->post_title . '</h3>';
+
+						$form .= '<div style="margin:10px 0 10px 0;display: inline-block;">';
+							
+							$form .=  $this->parent->admin->display_field( array(
 					
-						$form .= '<div class="postbox" style="min-height:45px;">';
-							
-							$form .= '<h3 style="float:left;margin:10px;width:300px;display: inline-block;float: left;">' . $directory->post_title . '</h3>';
-
-							$form .= '<div style="margin:10px 0 10px 0;display: inline-block;">';
-							
-								$form .= $this->get_user_directory_form($user,$directory->ID);			
+								'type'				=> 'switch',
+								'id'				=> $this->parent->_base . 'in_directory-' . $directory->ID,
+								'data' 				=> $in_directory,
+								'placeholder' 		=> '',
+								'description'		=> 'Approve',
 									
-							$form .= '</div>';
+							), $user, false );
+							
+							if( $in_directory == 'on' ){
 								
+								$form .= $this->get_user_directory_form($user,$directory->ID);			
+							}
+							
 						$form .= '</div>';
-					}
+							
+					$form .= '</div>';
 				}
 				
 				if( !empty($form) ){
@@ -217,16 +240,29 @@ class LTPLE_Directory {
 			
 			foreach( $directories as $directory ){
 				
-				$status = 'off';
+				// directory approval
 				
-				if( !empty($_POST[$this->parent->_base . 'policy_directory-'.$directory->ID]) && $_POST[$this->parent->_base . 'policy_directory-'.$directory->ID] == 'on' ){
+				$approval = 'off';
+				
+				if( !empty($_POST[$this->parent->_base . 'in_directory-'.$directory->ID]) && $_POST[$this->parent->_base . 'in_directory-'.$directory->ID] == 'on' ){
 					
-					$status = 'on';
+					$approval = 'on';
 				}
 				
-				update_user_meta( $user_id, $this->parent->_base . 'in_directory-' . $directory->ID, $status );
-					
-				update_user_meta( $user_id, $this->parent->_base . 'policy_directory-' .  $directory->ID, $status );
+				update_user_meta( $user_id, $this->parent->_base . 'in_directory-' . $directory->ID, $approval );
+				
+				// profile privacy
+				
+				$policy = 'off';				
+				
+				if( $approval == 'on' && !empty($_POST[$this->parent->_base . 'policy_directory-'.$directory->ID]) && $_POST[$this->parent->_base . 'policy_directory-'.$directory->ID] == 'on' ){
+						
+					$policy = 'on';
+				}
+				
+				update_user_meta( $user_id, $this->parent->_base . 'policy_directory-' .  $directory->ID, $policy );
+				
+				// directory fields
 				
 				$this->save_user_directory_fields($user_id,$directory->ID,$_POST);
 			}
@@ -235,21 +271,38 @@ class LTPLE_Directory {
 	
 	public function save_user_directory_fields($user,$id,$fields){
 		
-		if( is_numeric($user) )
+		if( is_numeric($user) ){
 		
 			$user = get_user_by('id',$user);
+		}
 		
-		if( $data = $this->get_directory_form_data($id,$user) ){
+		if( !empty($user->ID) ){
 			
-			foreach( $data['name'] as $e => $name) {
+			// policy setting
+			
+			$status = 'off';
+			
+			if( !empty($_POST[$this->parent->_base . 'policy_directory-'.$id]) && $_POST[$this->parent->_base . 'policy_directory-'.$id] == 'on' ){
 				
-				$field_id = $this->parent->_base . 'dir_' . $id . '_' . str_replace(array('-',' '),'_',$name);
+				$status = 'on';
+			}
+			
+			update_user_meta($user->ID,$this->parent->_base .'policy_directory-'. $id,$status);
+			
+			// form settings
+			
+			if( $data = $this->get_directory_form_data($id,$user) ){
 				
-				if( !empty($name) && !empty($fields[$field_id]) ){
+				foreach( $data['name'] as $e => $name) {
 					
-					$value = ( $fields[$field_id] != '0' ? $fields[$field_id] : '' );
+					$field_id = $this->parent->_base . 'dir_' . $id . '_' . str_replace(array('-',' '),'_',$name);
 					
-					update_user_meta( $user->ID, $field_id, $value );
+					if( !empty($name) && !empty($fields[$field_id]) ){
+						
+						$value = ( $fields[$field_id] != '0' ? $fields[$field_id] : '' );
+						
+						update_user_meta( $user->ID, $field_id, $value );
+					}
 				}
 			}
 		}
@@ -282,9 +335,9 @@ class LTPLE_Directory {
 
 			foreach( $this->list as $directory ){
 				
-				$directory->directory_icon = 'fa fa-map-marker-alt';
+				$directory->icon = 'fa fa-map-marker-alt';
 				
-				$directory->directory_tab = get_post_meta($directory->ID,'directory_tab',true);
+				$directory->tab = get_post_meta($directory->ID,'directory_tab',true);
 			}
 		}
 		
@@ -354,7 +407,7 @@ class LTPLE_Directory {
 			
 			foreach( $this->list as $directory ){
 				
-				if( $this->get_default_directory_approval($directory->ID) == 'on' ){
+				if( $this->get_user_directory_approval($this->parent->user, $directory->ID) == 'on' ){
 				
 					$this->parent->profile->privacySettings['directory-' .  $directory->ID] = array(
 
@@ -362,14 +415,14 @@ class LTPLE_Directory {
 						'label'			=> $directory->post_title,
 						'description'	=> 'Add me to the ' . $directory->post_title . ' directory',
 						'type'			=> 'switch',
-						'default'		=> 'off',
+						'default'		=> $this->get_default_directory_privacy($directory->ID),
 					);
 				}
 				else{
 					
 					$this->parent->profile->privacySettings['directory-' .  $directory->ID] = array(
 
-						'id' 			=> $this->parent->_base . 'policy_' . 'directory-' .  $directory->ID,
+						'id' 			=> $this->parent->_base . 'policy_directory-' .  $directory->ID,
 						'label'			=> $directory->post_title,
 						'type'			=> 'message',
 						'value'			=> '<a class="btn btn-xs btn-success" style="margin-bottom:10px;padding:5px 10px;" href="' . $this->parent->urls->primary . '/contact/" target="_blank">Request</a>',
@@ -609,33 +662,43 @@ class LTPLE_Directory {
 		return $default_value;
 	}
 	
-	public function get_user_diretory_approval($user,$directory_id){
+	public function get_default_directory_privacy($directory_id){
 		
-		$default_value = $this->get_default_directory_approval($directory_id);
+		$default_value = get_post_meta($directory_id,'directory_default_privacy',true);
 		
+		if( empty($default_value) ){
+			
+			$default_value = 'on';
+		}
+		
+		return $default_value;
+	}
+	
+	public function get_user_directory_approval($user,$directory_id){
+
 		$in_directory = get_user_meta( $user->ID, $this->parent->_base . 'in_directory-' . $directory_id, true );
 		
 		if( empty($in_directory) ){
 			
-			$in_directory = $default_value;
+			$in_directory = $this->get_default_directory_approval($directory_id);
 		}
 
 		return $in_directory;
 	}
 	
-	public function user_in_diretory($user, $directory_id){
+	public function user_in_directory($user, $directory_id){
 		
 		// get user policy
 		
 		if( !$user_policy = get_user_meta($user->ID, $this->parent->_base . 'policy_directory-' . $directory_id, true ) ){
 		
-			$user_policy = 'off';
+			$user_policy = $this->get_default_directory_privacy($directory_id);
 		}
 		
 		// get user approval
 
-		$in_directory = $this->get_user_diretory_approval($user, $directory_id);
-
+		$in_directory = $this->get_user_directory_approval($user,$directory_id);
+		
 		// is user in directory
 		
 		if( $user_policy == 'on' && $in_directory == 'on' ){
@@ -653,7 +716,7 @@ class LTPLE_Directory {
 		
 			foreach( $this->list as $directory ){
 				
-				if( $this->user_in_diretory($this->parent->profile->user, $directory->ID) ){
+				if( $this->user_in_directory($this->parent->profile->user, $directory->ID) ){
 					
 					$tab = array();
 					
@@ -661,9 +724,9 @@ class LTPLE_Directory {
 					
 					// get tab name
 					
-					$name = ucwords(strtolower($directory->directory_tab));
+					$name = ucwords(strtolower($directory->tab));
 					
-					$slug = sanitize_title($directory->directory_tab);
+					$slug = sanitize_title($directory->tab);
 					
 					$tab['name'] = $name;
 					
@@ -768,11 +831,11 @@ class LTPLE_Directory {
 		
 			foreach( $this->list as $directory ){
 				
-				if( $this->user_in_diretory($this->parent->profile->user, $directory->ID) ){
+				if( $this->user_in_directory($this->parent->profile->user, $directory->ID) ){
 					
 					// get tab name
 					
-					$title = ucwords(strtolower($directory->directory_tab));
+					$title = ucwords(strtolower($directory->tab));
 					
 					// get tab content
 
@@ -850,9 +913,9 @@ class LTPLE_Directory {
 
 			foreach( $this->list as $directory ){
 				
-				if( $this->user_in_diretory($this->parent->user, $directory->ID) ){
+				if( $this->user_in_directory($this->parent->user, $directory->ID) ){
 				
-					$sidebar .= '<li'.( $currentTab == $directory->post_name . '-directory' ? ' class="active"' : '' ).'><a href="'.$this->parent->urls->profile . '?tab=' . $directory->post_name . '-directory"><span class="' . $directory->directory_icon . '"></span> ' . ucfirst( $directory->directory_tab ) . '</a></li>';
+					$sidebar .= '<li'.( $currentTab == $directory->post_name . '-directory' ? ' class="active"' : '' ).'><a href="'.$this->parent->urls->profile . '?tab=' . $directory->post_name . '-directory"><span class="' . $directory->icon . '"></span> ' . ucfirst( $directory->tab ) . '</a></li>';
 				}
 			}
 		}
@@ -872,7 +935,7 @@ class LTPLE_Directory {
 	
 	public function get_profile_settings_form(){
 		
-		$in_directory = $this->get_user_diretory_approval($this->parent->user, $this->current->ID);
+		$in_directory = $this->get_user_directory_approval($this->parent->user, $this->current->ID);
 		
 		if( $in_directory == 'on' ){
 			
@@ -887,11 +950,23 @@ class LTPLE_Directory {
 						echo'<h3>' . $this->current->post_title . ' Directory</h3>';
 						
 					echo'</div>';			
-
-					echo'<div class="col-xs-12 col-sm-2 text-right">';
+					
+					echo'<div class="col-xs-12 col-sm-2 text-right" style="padding-top:10px;">';
 						
-						echo'<a target="_blank" class="label label-primary" style="font-size: 13px;" href="'.$this->parent->urls->profile . $this->parent->user->ID . '/">view profile</a>';
+						//echo'<a target="_blank" class="label label-primary" style="font-size: 13px;" href="'.$this->parent->urls->profile . $this->parent->user->ID . '/">view profile</a>';
 						
+						echo '<label style="padding-right:10px;height:35px;float:left;">Show / Hide</label>';
+						
+						echo $this->parent->admin->display_field( array(
+				
+							'type'			=> 'switch',
+							'id'			=> $this->parent->_base . 'policy_directory-' . $this->current->ID,
+							'data' 			=> $this->user_in_directory($this->parent->user, $this->current->ID),
+							'placeholder' 	=> '',
+							'description'	=> '',
+								
+						),false,false);
+							
 					echo'</div>';
 					
 					echo'<div class="col-xs-12 col-sm-2"></div>';
@@ -899,9 +974,12 @@ class LTPLE_Directory {
 					echo'<div class="clearfix"></div>';
 				
 					echo'<div class="col-xs-12 col-sm-8">';
+							
+						if( $in_directory == 'on' ){
 						
-						echo $this->get_user_directory_form($this->parent->user,$this->current->ID);
-
+							echo $this->get_user_directory_form($this->parent->user,$this->current->ID);
+						}
+						
 					echo'</div>';
 					
 					echo'<div class="clearfix"></div>';
