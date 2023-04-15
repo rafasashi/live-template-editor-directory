@@ -200,7 +200,7 @@ class LTPLE_Directory {
 							
 					$in_directory = $this->get_user_directory_approval($user, $directory->ID);
 
-					$form .= '<div class="postbox" style="min-height:45px;">';
+					$form .= '<div style="margin:10px auto;min-height:45px;">';
 						
 						$form .= '<h3 style="float:left;margin:10px;width:300px;display: inline-block;float: left;">' . $directory->post_title . '</h3>';
 
