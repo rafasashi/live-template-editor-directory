@@ -110,6 +110,14 @@ class LTPLE_Directory {
 			$this->parent->admin->add_meta_boxes($fields);
 		});
 		
+		add_filter('ltple_admin_tabs_default-contents', function($fields){
+			
+			$fields['directory'] = array( 'tab'  => 'Forms','name' => 'Directories', 'in_menu' => false );
+			
+			return $fields;
+			
+		},10,1);
+		
 		//init profiler 
 		
 		add_action( 'init', array( $this, 'directory_init' ));	
@@ -173,15 +181,15 @@ class LTPLE_Directory {
 		
 			"metabox" => array(
 			
-				'name' => "directory_form",
+				'name' 		=> 'directory_form',
 				'title' 	=> __( 'Filters', 'live-template-editor-directory' ), 
 				'screen'	=> array('directory'),
 				'context' 	=> 'advanced',
 				
 			),
-			'id'		=> "directory_form",
+			'id'		=> 'directory_form',
 			'name'		=> 'directory_form',
-			'label'		=> "",
+			'label'		=> '',
 			'type'		=> 'form'
 		);
 
@@ -200,30 +208,38 @@ class LTPLE_Directory {
 							
 					$in_directory = $this->get_user_directory_approval($user, $directory->ID);
 
-					$form .= '<div style="margin:10px auto;min-height:45px;">';
-						
-						$form .= '<h3 style="float:left;margin:10px;width:300px;display: inline-block;float: left;">' . $directory->post_title . '</h3>';
+					$form .= '<h2>' . $directory->post_title . ' directory</h2>';
 
-						$form .= '<div style="margin:10px 0 10px 0;display: inline-block;">';
+					$form .= '<table class="form-table">';
+					$form .= '<tbody>';
+						
+						$form .= '<tr>';
+						
+							$form .= '<th><label>Approve</label></th>';
 							
-							$form .=  $this->parent->admin->display_field( array(
-					
-								'type'				=> 'switch',
-								'id'				=> $this->parent->_base . 'in_directory-' . $directory->ID,
-								'data' 				=> $in_directory,
-								'placeholder' 		=> '',
-								'description'		=> 'Approve',
-									
-							), $user, false );
-							
-							if( $in_directory == 'on' ){
+							$form .= '<td>';
 								
-								$form .= $this->get_user_directory_form($user,$directory->ID);			
-							}
+								$form .=  $this->parent->admin->display_field( array(
+						
+									'type'				=> 'switch',
+									'id'				=> $this->parent->_base . 'in_directory-' . $directory->ID,
+									'data' 				=> $in_directory,
+									'placeholder' 		=> '',
+									'description'		=> '',
+										
+								), $user, false );
+								
+							$form .= '</td>';
 							
-						$form .= '</div>';
-							
-					$form .= '</div>';
+						$form .= '</tr>';
+						
+					$form .= '</tbody>';
+					$form .= '</table>';						
+					
+					if( $in_directory == 'on' ){
+						
+						$form .= $this->get_user_directory_form($user,$directory->ID);			
+					}
 				}
 				
 				if( !empty($form) ){
@@ -1015,7 +1031,15 @@ class LTPLE_Directory {
 				foreach( $data['name'] as $e => $name) {
 					
 					if( !empty($name) && $data['input'][$e] != 'title' && $data['input'][$e] != 'label' && $data['input'][$e] != 'submit' ){
+									
+						// get field id
 						
+						$field_id = $this->parent->_base . 'dir_' . $id . '_' . str_replace(array('-',' '),'_',$name);
+
+						// get required
+						
+						$required = ( ( empty($data['required'][$e]) || $data['required'][$e] == 'required' ) ? true : false );
+								
 						$form .= '<tr>';
 						
 							$form .= '<th><label for="'.$name.'">' . ucfirst( str_replace(array('-','_'),' ',$name) ) . '</label></th>';
@@ -1025,15 +1049,7 @@ class LTPLE_Directory {
 							if( $data['input'][$e] == 'checkbox' || $data['input'][$e] == 'select' ){
 							
 								if( $values = explode(PHP_EOL,$data['value'][$e]) ){
-									
-									// get field id
-									
-									$field_id = $this->parent->_base . 'dir_' . $id . '_' . str_replace(array('-',' '),'_',$name);
 
-									// get required
-									
-									$required = ( ( empty($data['required'][$e]) || $data['required'][$e] == 'required' ) ? true : false );
-											
 									// get options
 											
 									$options = [];

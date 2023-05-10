@@ -5,7 +5,7 @@
 	echo get_header();
 
 		include($ltple->views . '/navbar.php');
-			
+		
 		// output directory
 			
 		echo'<div id="media_library" class="wrapper">';
@@ -14,7 +14,7 @@
 			
 				echo'<div class="gallery_type_title gallery_head">' . __('Directory','live-template-editor-directory') . '</div>';
 
-				echo'<div id="gallery_sidebar" style="padding:0 4px 0 9px;">';
+				echo'<div id="gallery_sidebar" style="padding:0 4px 0 5px;">';
 					
 					echo $ltple->admin->display_field( array(
 			
@@ -25,7 +25,7 @@
 						'method' 			=> 'post',
 						'description'		=> ''
 						
-					), $post, false );
+					),$post,false);
 
 				echo'</div>';
 						
