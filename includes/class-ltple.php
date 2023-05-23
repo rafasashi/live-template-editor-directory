@@ -112,7 +112,7 @@ class LTPLE_Directory {
 		
 		add_filter('ltple_admin_tabs_default-contents', function($fields){
 			
-			$fields['directory'] = array( 'tab'  => 'Forms','name' => 'Directories', 'in_menu' => false );
+			$fields['directory'] = array( 'tab'  => 'Forms','name' => 'Directories', 'in_menu' => true );
 			
 			return $fields;
 			
