@@ -109,15 +109,7 @@ class LTPLE_Directory {
 						
 			$this->parent->admin->add_meta_boxes($fields);
 		});
-		
-		add_filter('ltple_admin_tabs_default-contents', function($fields){
-			
-			$fields['directory'] = array( 'tab'  => 'Forms','name' => 'Directories', 'in_menu' => true );
-			
-			return $fields;
-			
-		},10,1);
-		
+
 		//init profiler 
 		
 		add_action( 'init', array( $this, 'directory_init' ));	
