@@ -456,7 +456,7 @@ class LTPLE_Directory {
 			'paged'			=> ( get_query_var( 'paged' ) ) ? get_query_var( 'paged' ) : ( !empty($_GET['page']) ? intval($_GET['page']) : 1 ),
 		);
 		
-		if( $this->parent->settings->options->enable_ranking == 'on' ){
+		if( $this->parent->settings->options->is_enabled('ranking') ){
 
 			$args['orderby'] 	= 'meta_value_num';
 			$args['meta_key'] 	= $this->parent->_base . 'stars';
@@ -949,7 +949,7 @@ class LTPLE_Directory {
 			
 			echo'<div class="tab-pane active" id="custom-profile">';
 			
-				echo'<form action="' . $this->parent->urls->current . '" method="post" class="tab-content row" style="margin:20px;">';
+				echo'<form action="' . $this->parent->urls->current . '" method="post" class="tab-content row" style="margin:5px;">';
 					
 					echo '<input type="hidden" name="submit-directory" value="' . $this->current->ID . '" />';
 					
