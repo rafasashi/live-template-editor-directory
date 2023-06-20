@@ -456,7 +456,7 @@ class LTPLE_Directory {
 			'paged'			=> ( get_query_var( 'paged' ) ) ? get_query_var( 'paged' ) : ( !empty($_GET['page']) ? intval($_GET['page']) : 1 ),
 		);
 		
-		if( $this->parent->settings->options->is_enabled('ranking') ){
+		if( $this->parent->settings->is_enabled('ranking') ){
 
 			$args['orderby'] 	= 'meta_value_num';
 			$args['meta_key'] 	= $this->parent->_base . 'stars';
