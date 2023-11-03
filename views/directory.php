@@ -8,7 +8,7 @@
 		
 		// output directory
 			
-		echo'<div id="media_library" class="wrapper">';
+		echo'<div id="gallery_wrapper" class="wrapper">';
 
 			echo '<div id="sidebar">';
 			
@@ -37,7 +37,7 @@
 
 					echo '<div id="directory-' . $post->post_name . '">';
 					
-						echo'<ul class="nav nav-pills" role="tablist">';
+						echo'<ul class="nav nav-pills nav-resizable" role="tablist">';
 
 							if ( !empty($ltple->directory->list) ){
 								
