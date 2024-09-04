@@ -319,7 +319,13 @@ class LTPLE_Directory {
 	public function directory_template( $template_path ){
 		
 		if( get_post_type() == 'directory' ){
-		
+			
+			add_filter('ltple_css_framework',function($framework){
+				
+				return 'bootstrap-3';
+				
+			},9999999999,1);
+			
 			$template_path = $this->views . '/directory.php';
 		}
 		
@@ -378,7 +384,9 @@ class LTPLE_Directory {
 			
 			foreach( $this->list as $directory ){
 				
-				if( !empty($_GET['tab']) && $_GET['tab'] == $directory->post_name . '-directory' ){
+				$tab = !empty($_GET['tab']) ? sanitize_title($_GET['tab']) : false;
+				
+				if( $tab == $directory->post_name . '-directory' ){
 					
 					$this->current = $directory;
 
@@ -391,7 +399,7 @@ class LTPLE_Directory {
 					
 					// get profile form
 					
-					add_filter('ltple_profile_settings_' . $_GET['tab'], array( $this, 'get_profile_settings_form' ));
+					add_filter('ltple_profile_settings_' . $tab, array( $this, 'get_profile_settings_form' ));
 					
 					break;
 				}
