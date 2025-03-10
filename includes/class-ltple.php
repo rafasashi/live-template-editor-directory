@@ -118,6 +118,17 @@ class LTPLE_Directory {
 		
 		add_filter( 'template_include', array( $this, 'directory_template'), 1 );	
 		
+        add_action('ltple_show_theme_footer', function($show){
+           
+           if( $this->parent->inWidget || strpos($this->parent->urls->current,'/directory/') !== false ){
+               
+                $show = false;
+           }
+           
+            return $show;
+           
+       },10,1);
+       
 	} // End __construct ()
 	
 	public function get_directory_fields(){
