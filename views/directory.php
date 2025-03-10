@@ -104,7 +104,7 @@
 								$form		= false,
 								$toolbar 	= 'toolbar',
 								$card		= true,
-								$itemHeight	= 320, 
+								$itemHeight	= 275, 
 								$fixedHeight= true, 
 								$echo		= true,
 								$pageSize	= $ltple->directory->per_page

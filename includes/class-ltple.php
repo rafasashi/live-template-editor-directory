@@ -70,7 +70,7 @@ class LTPLE_Directory {
 			add_action( 'edit_user_profile_update', array( $this, 'save_user_directories' ) );
 		}
 			
-		$this->parent->register_post_type( 'directory', __( 'Directories', 'live-template-editor-directory' ), __( 'Directory', 'live-template-editor-directory' ), '', array(
+		$this->parent->register_post_type( 'directory','Directories','Directory', '', array(
 
 			'public' 				=> true,
 			'publicly_queryable' 	=> true,
@@ -624,15 +624,19 @@ class LTPLE_Directory {
 						
 						$item.='<div style="position:relative;" class="panel panel-default">';
 							
-							$item.='<div class="banner-overlay" style="width:100%;height:200px;position:absolute;background-image:linear-gradient(to bottom right,#284d6b,' . $this->parent->settings->mainColor . ');opacity:.5;"></div>';
-							
-							$item.='<div class="thumb_wrapper" style="background:url(' . $user->banner . ');background-size:cover;background-repeat:no-repeat;background-position:center center;"></div>'; //thumb_wrapper					
-							
-							$item.='<div class="panel-body" style="padding-bottom:0;">';
-								
-								$item.='<a href="' . $user->profile . '" style="position:absolute;top:175px;">';
+                            $item.='<a href="' . $user->profile . '">';
 									
-									$item.='<img src="' . $user->avatar . '" style="height:50px;width:50px;border:5px solid #fff;background:#fff;border-radius:250px;">';
+                                $item.='<div class="banner-overlay" style="width:100%;height:165px;position:absolute;background-image:linear-gradient(to bottom right,#284d6b,' . $this->parent->settings->mainColor . ');opacity:.4;"></div>';
+							
+                                $item.='<div class="thumb_wrapper" style="background:url(' . $user->banner . ');background-size:cover;background-repeat:no-repeat;background-position:center center;"></div>'; //thumb_wrapper					
+							
+                            $item.='</a>';
+                            
+							$item.='<div class="panel-body" style="padding-bottom:0;position:relative;">';
+								
+								$item.='<a class="product-logo" href="' . $user->profile . '" style="position:absolute;top:-25px;">';
+									
+									$item.='<img src="' . $user->avatar . '" style="height:45px;width:45px;border: 5px solid #fff;background:#fff;border-radius:250px;">';
 									
 								$item.='</a>';
 								
@@ -646,12 +650,16 @@ class LTPLE_Directory {
 								 
 							$item.='</div>';
 							
-							$item.='<div style="background:#fff;border:none;" class="panel-footer text-right">';
+							$item.='<div class="panel-footer" style="padding:0;margin-top:15px;">';
 								
-								// about button
+                                $item.='<div class="btn-group btn-group-justified">';
+                                
+                                    // about button
 								
-								$item.='<a class="btn btn-sm btn-primary" style="margin-right:4px;" href="'. $user->profile . '" title="More info about ' . ucfirst($user->nickname) . '">About</a>';
-
+                                    $item.='<a class="btn" href="'. $user->profile . '" title="More info about ' . ucfirst($user->nickname) . '">About</a>';
+                                
+                                $item.='</div>';
+                                
 							$item.='</div>';
 						
 						$item.='</div>';
